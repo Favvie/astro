@@ -1,4 +1,3 @@
-
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
@@ -84,13 +83,23 @@ contract TokenStaking is Initializable, ReentrancyGuardUpgradeable, OwnableUpgra
         uint64 lastRewardUpdate; // Last time rewards were calculated
     }
 
+    // Constants
+    uint64 public constant MAX_APY = 10000; // 100% APY max
+    uint64 public constant MIN_STAKING_PERIOD = 1 days;
+    uint64 public constant MAX_STAKING_PERIOD = 365 days;
+    uint16 public constant BASIS_POINTS = 10000;
+    uint256 public constant SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
+
     // State variables
     ILaunchpad public launchpad;
     uint32 public stakingPoolCount;
 
     // Mappings
-
+    mapping(uint32 => StakingPool) public stakingPools; // campaignId => StakingPool
+    mapping(uint32 => mapping(address => UserStake)) public userStakes; // campaignId => user => UserStake
     mapping(address => uint32[]) public userStakingPools; // user => campaignIds they've staked in
+    mapping(uint32 => address[]) public poolStakers; // campaignId => list of stakers
+    mapping(uint32 => mapping(address => bool)) public hasStaked; // campaignId => user => hasStaked
 
     modifier validCampaign(uint32 _campaignId) {
         if (_campaignId == 0 || _campaignId > launchpad.campaignCount()) revert InvalidInput();
@@ -147,7 +156,181 @@ contract TokenStaking is Initializable, ReentrancyGuardUpgradeable, OwnableUpgra
         emit StakingPoolCreated(_campaignId, tokenAddress, _apy, _minStakingPeriod);
     }
 
+    /**
+     * @notice Stake tokens in a specific campaign's pool
+     * @param _campaignId The campaign ID
+     * @param _amount Amount of tokens to stake
+     */
 
+
+    /**
+     * @notice Unstake tokens and claim rewards
+     * @param _campaignId The campaign ID
+     * @param _amount Amount of tokens to unstake (0 = unstake all)
+     */
+    function unstakeTokens(uint32 _campaignId, uint128 _amount) external nonReentrant validCampaign(_campaignId) {
+        StakingPool storage pool = stakingPools[_campaignId];
+        UserStake storage userStake = userStakes[_campaignId][msg.sender];
+
+        if (userStake.amount == 0) revert InsufficientBalance();
+
+        // Check minimum staking period (unless emergency mode)
+        if (!pool.emergencyMode && block.timestamp < userStake.stakingTime + pool.minStakingPeriod) {
+            revert StakingPeriodNotEnded();
+        }
+
+        // If amount is 0, unstake everything
+        if (_amount == 0 || _amount > userStake.amount) {
+            _amount = userStake.amount;
+        }
+
+        // Update rewards before unstaking
+        _updateUserRewards(_campaignId, msg.sender);
+
+        // Calculate and transfer rewards
+        uint128 rewards = userStake.rewards;
+        if (rewards > 0 && rewards <= pool.rewardPool) {
+            userStake.rewards = 0;
+            pool.rewardPool -= rewards;
+            pool.stakingToken.safeTransfer(msg.sender, rewards);
+        } else if (rewards > pool.rewardPool) {
+            // Transfer available rewards only
+            userStake.rewards -= pool.rewardPool;
+            rewards = pool.rewardPool;
+            pool.rewardPool = 0;
+            if (rewards > 0) {
+                pool.stakingToken.safeTransfer(msg.sender, rewards);
+            }
+        }
+
+        // Update stake amounts
+        userStake.amount -= _amount;
+        pool.totalStaked -= _amount;
+
+        // Transfer staked tokens back to user
+        pool.stakingToken.safeTransfer(msg.sender, _amount);
+
+        emit TokensUnstaked(_campaignId, msg.sender, _amount, rewards, block.timestamp);
+    }
+
+    /**
+     * @notice Claim accumulated rewards without unstaking
+     * @param _campaignId The campaign ID
+     */
+    function claimRewards(uint32 _campaignId) external nonReentrant validCampaign(_campaignId) {
+        StakingPool storage pool = stakingPools[_campaignId];
+        UserStake storage userStake = userStakes[_campaignId][msg.sender];
+
+        if (userStake.amount == 0) revert InsufficientBalance();
+
+        // Update rewards
+        _updateUserRewards(_campaignId, msg.sender);
+
+        uint128 rewards = userStake.rewards;
+        if (rewards == 0) revert NoRewardsAvailable();
+        if (rewards > pool.rewardPool) {
+            rewards = pool.rewardPool;
+        }
+
+        userStake.rewards -= rewards;
+        pool.rewardPool -= rewards;
+
+        pool.stakingToken.safeTransfer(msg.sender, rewards);
+
+        emit RewardsClaimed(_campaignId, msg.sender, rewards, block.timestamp);
+    }
+
+    /**
+     * @notice Add rewards to a staking pool
+     * @param _campaignId The campaign ID
+     * @param _amount Amount of tokens to add as rewards
+     */
+    function addRewards(uint32 _campaignId, uint128 _amount) external validCampaign(_campaignId) {
+        if (_amount == 0) revert InvalidInput();
+
+        StakingPool storage pool = stakingPools[_campaignId];
+
+        pool.stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        pool.rewardPool += _amount;
+
+        emit RewardsAdded(_campaignId, _amount);
+    }
+
+    /**
+     * @notice Update staking pool parameters (owner only)
+     * @param _campaignId The campaign ID
+     * @param _apy New APY in basis points
+     * @param _enabled Whether staking is enabled
+     */
+    function updateStakingPool(
+        uint32 _campaignId,
+        uint64 _apy,
+        bool _enabled
+    ) external onlyOwner validCampaign(_campaignId) {
+        if (_apy > MAX_APY) revert InvalidInput();
+
+        StakingPool storage pool = stakingPools[_campaignId];
+        pool.apy = _apy;
+        pool.enabled = _enabled;
+
+        emit StakingPoolUpdated(_campaignId, _apy, _enabled);
+    }
+
+    /**
+     * @notice Enable emergency mode for a pool (owner only)
+     * @param _campaignId The campaign ID
+     * @param _emergencyMode Whether to enable emergency mode
+     */
+    function setEmergencyMode(uint32 _campaignId, bool _emergencyMode) external onlyOwner validCampaign(_campaignId) {
+        stakingPools[_campaignId].emergencyMode = _emergencyMode;
+    }
+
+    /**
+     * @notice Emergency withdraw without rewards (in case of emergency mode)
+     * @param _campaignId The campaign ID
+     */
+    function emergencyWithdraw(uint32 _campaignId) external nonReentrant validCampaign(_campaignId) {
+        StakingPool storage pool = stakingPools[_campaignId];
+        UserStake storage userStake = userStakes[_campaignId][msg.sender];
+
+        if (!pool.emergencyMode) revert InvalidInput();
+        if (userStake.amount == 0) revert InsufficientBalance();
+
+        uint128 amount = userStake.amount;
+
+        // Reset user stake
+        userStake.amount = 0;
+        userStake.rewards = 0;
+
+        // Update pool total
+        pool.totalStaked -= amount;
+
+        // Transfer tokens back
+        pool.stakingToken.safeTransfer(msg.sender, amount);
+
+        emit EmergencyWithdraw(_campaignId, msg.sender, amount);
+    }
+
+    /**
+     * @notice Internal function to update user rewards
+     * @param _campaignId The campaign ID
+     * @param _user User address
+     */
+    function _updateUserRewards(uint32 _campaignId, address _user) internal {
+        StakingPool storage pool = stakingPools[_campaignId];
+        UserStake storage userStake = userStakes[_campaignId][_user];
+
+        if (userStake.amount == 0) return;
+
+        uint256 timeStaked = block.timestamp - userStake.lastRewardUpdate;
+        if (timeStaked == 0) return;
+
+        // Calculate rewards: (amount * apy * timeStaked) / (BASIS_POINTS * SECONDS_PER_YEAR)
+        uint256 rewardEarned = (uint256(userStake.amount) * pool.apy * timeStaked) / (BASIS_POINTS * SECONDS_PER_YEAR);
+
+        userStake.rewards += uint128(rewardEarned);
+        userStake.lastRewardUpdate = uint64(block.timestamp);
+    }
 
     // View functions
 
@@ -182,6 +365,39 @@ contract TokenStaking is Initializable, ReentrancyGuardUpgradeable, OwnableUpgra
         timeToUnlock = block.timestamp >= unlockTime ? 0 : unlockTime - uint64(block.timestamp);
     }
 
+    /**
+     * @notice Get staking pool information
+     * @param _campaignId The campaign ID
+     */
+    function getStakingPoolInfo(
+        uint32 _campaignId
+    )
+        external
+        view
+        returns (
+            address stakingToken,
+            uint128 totalStaked,
+            uint128 rewardPool,
+            uint64 apy,
+            uint64 minStakingPeriod,
+            bool enabled,
+            bool emergencyMode,
+            uint256 stakerCount
+        )
+    {
+        StakingPool memory pool = stakingPools[_campaignId];
 
-    
+        return (
+            address(pool.stakingToken),
+            pool.totalStaked,
+            pool.rewardPool,
+            pool.apy,
+            pool.minStakingPeriod,
+            pool.enabled,
+            pool.emergencyMode,
+            poolStakers[_campaignId].length
+        );
+    }
+
+
 }
