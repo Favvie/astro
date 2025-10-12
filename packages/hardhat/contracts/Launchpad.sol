@@ -175,5 +175,35 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         emit CampaignCreated(campaignId, msg.sender, _name, _targetFunding, _totalSupply, _deadline);
     }
 
+    function _getCampaignInfo(uint32 _campaignId) public view returns (CampaignInfo memory) {
+        Campaign storage c = campaigns[_campaignId];
+        
+        return CampaignInfo({
+            id: c.id,
+            creator: c.creator,
+            targetAmount: c.targetAmount,
+            amountRaised: c.amountRaised,
+            tokensSold: c.tokensSold,
+            totalSupply: c.totalSupply,
+            tokensForSale: c.tokensForSale,
+            creatorAllocation: c.creatorAllocation,
+            liquidityAllocation: c.liquidityAllocation,
+            platformFeeTokens: c.platformFeeTokens,
+            deadline: c.deadline,
+            tokenAddress: address(c.token),
+            isActive: c.isActive,
+            isFundingComplete: c.isFundingComplete,
+            isCancelled: c.isCancelled,
+            name: c.name,
+            symbol: c.symbol,
+            description: c.description,
+            reserveRatio: c.reserveRatio,
+            uniswapPair: c.uniswapPair,
+            blockNumberCreated: c.blockNumberCreated,
+            promotionalOgPoints: c.promotionalOgPoints,
+            isPromoted: c.isPromoted
+        });
+    }
+
     receive() external payable {}
 }

@@ -3095,10 +3095,41 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts@npm:~5.0.2":
-  version: 5.0.2
-  resolution: "@openzeppelin/contracts@npm:5.0.2"
-  checksum: 0cce6fc284bd1d89e2a447027832a62f1356b44ee31088899453e10349a63a62df2f07da63d76e4c41aad9c86b96b650b2b6fc85439ef276850dda1170a047fd
+"@openzeppelin/contracts-upgradeable@npm:^5.4.0":
+  version: 5.4.0
+  resolution: "@openzeppelin/contracts-upgradeable@npm:5.4.0"
+  peerDependencies:
+    "@openzeppelin/contracts": 5.4.0
+  checksum: fe4123bfcec50d806ea0b37dd5b4e7426096e1e88eee8c546cf64535bf9c9aee4c5b1d5c8b194fcb9050bf23001684fce439ff13816e567097998d56af360c8d
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts@npm:^5.4.0":
+  version: 5.4.0
+  resolution: "@openzeppelin/contracts@npm:5.4.0"
+  checksum: 8a0c64266f5213801029251fdc9815798917b311b7fc9acb94db13a479a3a0d044e0312f57e739f13b87161105157cb8da023124b4f026cf6b72a718a333ef64
+  languageName: node
+  linkType: hard
+
+"@paper-design/shaders-react@npm:^0.0.57":
+  version: 0.0.57
+  resolution: "@paper-design/shaders-react@npm:0.0.57"
+  dependencies:
+    "@paper-design/shaders": 0.0.57
+  peerDependencies:
+    "@types/react": ^18 || ^19
+    react: ^18 || ^19
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: d9ddb0fb210c069f4ef55525b2c053866ff61ad8c64a43266f86597b2f5a8318ac948f5125c34cb68a08051c247469cf4ec96948e5e56dec4f049bcc00981134
+  languageName: node
+  linkType: hard
+
+"@paper-design/shaders@npm:0.0.57":
+  version: 0.0.57
+  resolution: "@paper-design/shaders@npm:0.0.57"
+  checksum: f8758a14b3dfa9791177fed2e1c8d843dbaa35d8789cea5ac7153078e5e048543e4434ee830542e7016b2156344adfe21082d22833ed7334f3410c2cc8a5e4a1
   languageName: node
   linkType: hard
 
@@ -3512,7 +3543,8 @@ __metadata:
     "@nomicfoundation/hardhat-ethers": ~3.0.8
     "@nomicfoundation/hardhat-network-helpers": ~1.0.11
     "@nomicfoundation/hardhat-verify": ~2.0.10
-    "@openzeppelin/contracts": ~5.0.2
+    "@openzeppelin/contracts": ^5.4.0
+    "@openzeppelin/contracts-upgradeable": ^5.4.0
     "@typechain/ethers-v5": ~11.1.2
     "@typechain/ethers-v6": ~0.5.1
     "@typechain/hardhat": ~9.1.0
@@ -3548,6 +3580,7 @@ __metadata:
   resolution: "@se-2/nextjs@workspace:packages/nextjs"
   dependencies:
     "@heroicons/react": ~2.1.5
+    "@paper-design/shaders-react": ^0.0.57
     "@rainbow-me/rainbowkit": 2.2.8
     "@tailwindcss/postcss": 4.0.15
     "@tanstack/react-query": ~5.59.15
@@ -3568,6 +3601,7 @@ __metadata:
     eslint-plugin-prettier: ~5.2.4
     framer-motion: ^12.23.24
     kubo-rpc-client: ~5.0.2
+    lucide-react: ^0.545.0
     next: ~15.2.3
     next-nprogress-bar: ~2.3.13
     next-themes: ~0.3.0
@@ -12114,6 +12148,15 @@ __metadata:
   version: 0.3.3
   resolution: "lru_map@npm:0.3.3"
   checksum: ca9dd43c65ed7a4f117c548028101c5b6855e10923ea9d1f635af53ad20c5868ff428c364d454a7b57fe391b89c704982275410c3c5099cca5aeee00d76e169a
+  languageName: node
+  linkType: hard
+
+"lucide-react@npm:^0.545.0":
+  version: 0.545.0
+  resolution: "lucide-react@npm:0.545.0"
+  peerDependencies:
+    react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 0f9312903252668edaae3f22b85ebd88047d8c8c2bcf1cd57e2b97c3e662fa6405254d772cafcd439a5acc7674a4238aabebedce7de94b7613702859403c5d63
   languageName: node
   linkType: hard
 
