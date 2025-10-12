@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "./library/Math.sol";
+import "./library/LaunchpadCore.sol";
 import "./interfaces/IUniswapV2Router.sol";
 import "./interfaces/IUniswapV2Factory.sol";
 import "./Token.sol";
@@ -28,9 +29,15 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
 
     // Packed events
     event CampaignCreated(uint256 indexed campaignId, address indexed creator, string name, uint256 targetFunding, uint256 totalSupply, uint256 deadline);
-    event CampaignCancelled(uint256 indexed campaignId, address indexed creator);
+    event TokensPurchased(uint256 indexed campaignId, address indexed buyer, uint256 usdcAmount, uint256 tokensReceived, uint256 timestamp);
+    event FundingCompleted(uint256 indexed campaignId, uint256 totalFunding);
     event LiquidityAdded(uint256 indexed campaignId, uint256 usdcAmount, uint256 tokensAmount);
-
+    event CampaignCancelled(uint256 indexed campaignId, address indexed creator);
+    event RefundClaimed(uint256 indexed campaignId, address indexed investor, uint256 amount);
+    event PlatformFeeUpdated(uint256 newFee);
+    event UserParticipatedInCampaign(uint256 indexed campaignId, address indexed user, uint256 amount);
+    event CampaignPromoted(uint256 indexed campaignId);
+    event OgPointsAwarded(uint256 indexed campaignId, address indexed user, uint256 amount);
 
     // Packed struct - optimized for storage
     struct Campaign {
@@ -183,6 +190,75 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         emit CampaignCreated(campaignId, msg.sender, _name, _targetFunding, _totalSupply, _deadline);
     }
 
+    function promoteCampaign(uint32 _campaignId) external {
+        Campaign storage c = campaigns[_campaignId];
+        if (_campaignId == 0 || _campaignId > campaignCount) revert InvalidInput();
+        if (msg.sender != c.creator) revert Unauthorized();
+        if (!c.isActive || c.isCancelled || c.isFundingComplete) revert InactiveCampaign();
+        if (uint64(block.timestamp) > c.deadline) revert InvalidInput();
+        if (usdcToken.balanceOf(msg.sender) < promotionFee) revert InsufficientBalance();
+
+        c.isPromoted = true;
+        c.promotionalOgPoints = OG_POINTS_ALLOCATION;
+        totalPlatformFees += c.platformFeeTokens;
+        usdcToken.safeTransferFrom(msg.sender, address(this), promotionFee);
+        emit CampaignPromoted(_campaignId);
+    }
+
+    function buyTokens(uint32 _campaignId, uint128 _usdcAmount) external nonReentrant campaignExists(_campaignId) {
+        if (_usdcAmount == 0) revert InvalidInput();
+        Campaign storage c = campaigns[_campaignId];
+
+        if (!c.isActive || c.isCancelled || c.isFundingComplete) revert InactiveCampaign();
+        if (uint64(block.timestamp) > c.deadline) revert InvalidInput();
+        if (usdcToken.balanceOf(msg.sender) < _usdcAmount) revert InsufficientBalance();
+
+        uint256 tokensToMint = LaunchPadCore._calculatePurchaseReturn(
+            c.tokensForSale,
+            c.amountRaised,
+            c.reserveRatio,
+            _usdcAmount
+        );
+
+        if (c.tokensSold + uint128(tokensToMint) > c.tokensForSale) {
+            uint128 remainingTokens = c.tokensForSale - c.tokensSold;
+            uint256 usdcNeeded = LaunchPadCore._calculateExactUsdcForTokens(c, remainingTokens);
+            tokensToMint = remainingTokens;
+            _usdcAmount = uint128(usdcNeeded);
+        }
+
+        if (!userParticipation[msg.sender][_campaignId]) {
+            userParticipation[msg.sender][_campaignId] = true;
+            userParticipatedCampaigns[msg.sender].push(_campaignId);
+            emit UserParticipatedInCampaign(_campaignId, msg.sender, _usdcAmount);
+        }
+
+        usdcToken.safeTransferFrom(msg.sender, address(this), _usdcAmount);
+
+        c.amountRaised += _usdcAmount;
+        c.tokensSold += uint128(tokensToMint);
+        c.investments[msg.sender] += _usdcAmount;
+
+        if (c.isPromoted && c.promotionalOgPoints > 0) {
+            uint256 percentage = (uint256(tokensToMint) * 1e18) / c.tokensForSale;
+            uint128 awardedOgPoints = uint128((percentage * c.promotionalOgPoints) / 1e18);
+            if (awardedOgPoints > c.promotionalOgPoints) {
+                awardedOgPoints = c.promotionalOgPoints;
+            }
+            ogPoints[msg.sender] += awardedOgPoints;
+            c.promotionalOgPoints -= awardedOgPoints;
+            emit OgPointsAwarded(_campaignId, msg.sender, awardedOgPoints);
+        }
+
+        TokenFacet(address(c.token)).mint(msg.sender, tokensToMint);
+
+        emit TokensPurchased(_campaignId, msg.sender, _usdcAmount, uint256(tokensToMint), block.timestamp);
+
+        if (c.tokensSold >= c.tokensForSale || c.amountRaised >= c.targetAmount) {
+            _completeFunding(_campaignId);
+        }
+    }
+    
     function cancelCampaign(uint32 _campaignId) external campaignExists(_campaignId) {
         Campaign storage c = campaigns[_campaignId];
 
@@ -193,6 +269,49 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         c.isCancelled = true;
 
         emit CampaignCancelled(_campaignId, c.creator);
+    }
+
+    function claimRefund(uint32 _campaignId) external nonReentrant {
+        Campaign storage c = campaigns[_campaignId];
+
+        bool refundable = c.isCancelled || (uint64(block.timestamp) > c.deadline && !c.isFundingComplete);
+        if (!refundable) revert InvalidInput();
+
+        uint128 investment = c.investments[msg.sender];
+        c.investments[msg.sender] = 0;
+
+        uint256 tokenBalance = IERC20(address(c.token)).balanceOf(msg.sender);
+        if (tokenBalance > 0) {
+            TokenFacet(address(c.token)).burnFrom(msg.sender, tokenBalance);
+        }
+
+        usdcToken.safeTransfer(msg.sender, investment);
+        emit RefundClaimed(_campaignId, msg.sender, investment);
+    }
+
+    function getUserInvestment(uint32 _campaignId, address _user) campaignExists(_campaignId) external view returns (uint128) {
+        return campaigns[_campaignId].investments[_user];
+    }
+
+    function _completeFunding(uint32 _campaignId) internal {
+        Campaign storage c = campaigns[_campaignId];
+
+        c.isActive = false;
+        c.isFundingComplete = true;
+
+        uint128 creatorFunding = c.amountRaised / 2;
+        uint128 liquidityFunding = c.amountRaised - creatorFunding;
+
+        TokenFacet(address(c.token)).mint(c.creator, c.creatorAllocation);
+        TokenFacet(address(c.token)).mint(address(this), c.platformFeeTokens);
+
+        usdcToken.safeTransfer(c.creator, creatorFunding);
+
+        totalPlatformFees += (liquidityFunding * platformFeePercentage) / BASIS_POINTS;
+
+        _addLiquidity(_campaignId, liquidityFunding);
+
+        emit FundingCompleted(_campaignId, c.amountRaised);
     }
 
     function _addLiquidity(uint32 _campaignId, uint128 usdcAmount) internal {
