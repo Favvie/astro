@@ -3,7 +3,10 @@
 import Header from "~~/components/Header";
 import { AnimatedSection } from "~~/components/animated-section";
 import { BentoSection } from "~~/components/bento-section";
+import { CTASection } from "~~/components/cta-section";
+import { FooterSection } from "~~/components/footer-section";
 import HeroContent from "~~/components/hero-content";
+import { PricingSection } from "~~/components/pricing-section";
 import PulsingCircle from "~~/components/pulsing-circle";
 import ShaderBackground from "~~/components/shader-background";
 import { Spotlight } from "~~/components/ui/spotlight-new";
@@ -29,6 +32,20 @@ export default function ShaderShowcase() {
           </div>
         </div>
       </div>
+
+      <div>
+        <AnimatedSection id="pricing-section" className="relative z-10 pb-14" delay={0.2}>
+          <PricingSection />
+        </AnimatedSection>
+      </div>
+
+      <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto" delay={0.2}>
+        <CTASection />
+      </AnimatedSection>
+
+      <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
+        <FooterSection />
+      </AnimatedSection>
     </main>
   );
 }
