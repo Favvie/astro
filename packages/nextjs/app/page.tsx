@@ -3,12 +3,22 @@
 import Header from "~~/components/Header";
 import { AnimatedSection } from "~~/components/animated-section";
 import { BentoSection } from "~~/components/bento-section";
+import HeroContent from "~~/components/hero-content";
+import PulsingCircle from "~~/components/pulsing-circle";
+import ShaderBackground from "~~/components/shader-background";
+import { Spotlight } from "~~/components/ui/spotlight-new";
 
 export default function ShaderShowcase() {
   return (
     <main>
-      <div className=" w-full rounded-md flex flex-col md:items-center md:justify-center bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden">
+      <ShaderBackground>
         <Header />
+        <HeroContent />
+        <PulsingCircle />
+      </ShaderBackground>
+
+      <div className=" w-full rounded-md flex flex-col md:items-center md:justify-center bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden">
+        <Spotlight />
         <AnimatedSection id="features-section" className="relative z-10 max-w-[1320px] mx-auto" delay={0.2}>
           <BentoSection />
         </AnimatedSection>
@@ -19,20 +29,6 @@ export default function ShaderShowcase() {
           </div>
         </div>
       </div>
-
-      <div>
-        <AnimatedSection id="pricing-section" className="relative z-10 pb-14" delay={0.2}>
-          <div>Campaigns</div>
-        </AnimatedSection>
-      </div>
-
-      <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto" delay={0.2}>
-        <div>ctasection</div>
-      </AnimatedSection>
-
-      <AnimatedSection className="relative z-10 max-w-[1320px] mx-auto mt-8 md:mt-16" delay={0.2}>
-        <div>footer</div>
-      </AnimatedSection>
     </main>
   );
 }
