@@ -1,0 +1,145 @@
+//SPDX-License-Identifier: MIT
+pragma solidity >=0.8.0 <0.9.0;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+
+struct CampaignInfo {
+    uint256 id;
+    address creator;
+    uint256 targetAmount;
+    uint256 amountRaised;
+    uint256 tokensSold;
+    uint256 totalSupply;
+    uint256 tokensForSale;
+    uint256 creatorAllocation;
+    uint256 liquidityAllocation;
+    uint256 platformFeeTokens;
+    uint256 deadline;
+    address tokenAddress;
+    bool isActive;
+    bool isFundingComplete;
+    bool isCancelled;
+    string name;
+    string symbol;
+    string description;
+    uint32 reserveRatio;
+    uint256 blockNumberCreated;
+    uint256 promotionalOgPoints;
+    bool isPromoted;
+    address uniswapPair;
+}
+struct Campaign {
+    uint256 id;
+    address creator;
+    uint256 targetAmount;
+    uint256 amountRaised;
+    uint256 tokensSold;
+    uint256 totalSupply;
+    uint256 tokensForSale;
+    uint256 creatorAllocation;
+    uint256 liquidityAllocation;
+    uint256 platformFeeTokens;
+    uint256 deadline;
+    IERC20 token;
+    bool isActive;
+    bool isFundingComplete;
+    bool isCancelled;
+    string name;
+    string symbol;
+    string description;
+    uint32 reserveRatio;
+    address uniswapPair;
+    uint256 blockNumberCreated;
+    uint256 promotionalOgPoints;
+    bool isPromoted;
+    mapping(address => uint256) investments;
+}
+
+interface IParentContract {
+    function getSummaryStats()
+        external
+        view
+        returns (
+            uint256 totalCampaigns,
+            uint256 activeCampaigns,
+            uint256 completedCampaigns,
+            uint256 cancelledCampaigns,
+            uint256 expiredCampaigns,
+            uint256 totalFundingRaised
+        );
+
+
+}
+
+contract LaunchpadV2 is ReentrancyGuard {
+
+    using SafeERC20 for IERC20;
+
+    IParentContract parentContract;
+    // uint256 campaignCount = IParentContract(parentContract).campaignCount();
+    IERC20 public usdcToken;
+    IUniswapV2Router public uniswapRouter;
+    IUniswapV2Factory public uniswapFactory;
+
+    error ZeroValueNotAllowed();
+
+
+
+
+    constructor(address _parentContract, address _usdcToken, address _uniswapRouter, address _uniswapFactory) {
+        parentContract = IParentContract(_parentContract);
+        usdcToken = IERC20(_usdcToken);
+        uniswapRouter = IUniswapV2Router(_uniswapRouter);
+        uniswapFactory = IUniswapV2Factory(_uniswapFactory);
+    }
+
+   /**
+     * @dev Swap campaign token for USDC using Uniswap pool
+     * @param _campaignId ID of the campaign
+     * @param _tokenAmount Amount of tokens to swap
+     * @param _minUsdcOut Minimum USDC expected (for slippage protection)
+     * @param _deadline Transaction deadline
+    */
+    function swapTokenForUsdc(
+        uint32 _campaignId,
+        uint256 _tokenAmount,
+        uint256 _minUsdcOut,
+        uint256 _deadline
+    ) external nonReentrant {
+        uint256 campaignCount = IParentContract(parentContract).campaignCount();
+
+        CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
+
+        if (!campaign.isFundingComplete) revert FundingNotMet();
+
+        address token = campaign.tokenAddress;
+        
+        // Check user has enough tokens
+        if (IERC20(token).balanceOf(msg.sender) < _tokenAmount) revert NotEnoughTokens();
+
+        // Transfer tokens from user to this contract
+        IERC20(token).safeTransferFrom(msg.sender, address(this), _tokenAmount);
+
+        // Approve router to spend tokens
+        IERC20(token).approve(address(uniswapRouter), _tokenAmount);
+
+        // Set up swap path: token -> USDC (CORRECTED)
+        address[] memory path = new address[](2);
+        path[0] = address(token);  // FROM: campaign token
+        path[1] = address(usdcToken);  // TO: USDC
+
+        // Perform swap: sell exact tokens for minimum USDC
+        uniswapRouter.swapExactTokensForTokens(
+            _tokenAmount,    // exact amount of tokens to sell
+            _minUsdcOut,     // minimum USDC to receive
+            path,            // token -> USDC path
+            msg.sender,      // send USDC directly to user
+            _deadline        // deadline
+        );
+    }
+
+
+}
