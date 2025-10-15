@@ -161,7 +161,42 @@ contract TokenStaking is Initializable, ReentrancyGuardUpgradeable, OwnableUpgra
      * @param _campaignId The campaign ID
      * @param _amount Amount of tokens to stake
      */
+    function stakeTokens(
+        uint32 _campaignId,
+        uint128 _amount
+    ) external nonReentrant validCampaign(_campaignId) stakingEnabled(_campaignId) {
+        if (_amount == 0) revert InvalidInput();
 
+        StakingPool storage pool = stakingPools[_campaignId];
+        UserStake storage userStake = userStakes[_campaignId][msg.sender];
+
+        // Check user balance
+        if (pool.stakingToken.balanceOf(msg.sender) < _amount) revert InsufficientBalance();
+
+        // Update rewards before changing stake amount
+        _updateUserRewards(_campaignId, msg.sender);
+
+        // Transfer tokens to contract
+        pool.stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
+
+        // Update user stake
+        if (userStake.amount == 0) {
+            userStake.stakingTime = uint64(block.timestamp);
+            userStake.lastRewardUpdate = uint64(block.timestamp);
+
+            // Add user to staking pools if first time
+            if (!hasStaked[_campaignId][msg.sender]) {
+                hasStaked[_campaignId][msg.sender] = true;
+                userStakingPools[msg.sender].push(_campaignId);
+                poolStakers[_campaignId].push(msg.sender);
+            }
+        }
+
+        userStake.amount += _amount;
+        pool.totalStaked += _amount;
+
+        emit TokensStaked(_campaignId, msg.sender, _amount, block.timestamp);
+    }
 
     /**
      * @notice Unstake tokens and claim rewards
@@ -399,5 +434,30 @@ contract TokenStaking is Initializable, ReentrancyGuardUpgradeable, OwnableUpgra
         );
     }
 
+    /**
+     * @notice Get all campaigns a user has staked in
+     * @param _user User address
+     */
+    function getUserStakingPools(address _user) external view returns (uint32[] memory) {
+        return userStakingPools[_user];
+    }
 
+    /**
+     * @notice Get all stakers in a pool
+     * @param _campaignId The campaign ID
+     */
+    function getPoolStakers(uint32 _campaignId) external view returns (address[] memory) {
+        return poolStakers[_campaignId];
+    }
+
+    /**
+     * @notice Calculate potential rewards for a given amount and time
+     * @param _campaignId The campaign ID
+     * @param _amount Amount to stake
+     * @param _duration Duration to stake for
+     */
+    function calculateRewards(uint32 _campaignId, uint128 _amount, uint64 _duration) external view returns (uint256) {
+        StakingPool memory pool = stakingPools[_campaignId];
+        return (uint256(_amount) * pool.apy * _duration) / (BASIS_POINTS * SECONDS_PER_YEAR);
+    }
 }
