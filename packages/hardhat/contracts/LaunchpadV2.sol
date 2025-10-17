@@ -78,8 +78,11 @@ interface IParentContract {
 
     function campaignCount() external view returns (uint32);
 
+    function campaigns(uint256) external view returns (CampaignInfo memory);
+
     function _getCampaignInfo(uint32) external view returns (CampaignInfo memory);
 
+    function usdcToken() external view returns (IERC20);
 
 }
 
@@ -94,13 +97,19 @@ contract LaunchpadV2 is ReentrancyGuard {
     IUniswapV2Factory public uniswapFactory;
 
     error ZeroValueNotAllowed();
+    error ReserveRatioOutOfBounds();
+    error CampaignInactive();
+    error FundingAlreadyCompleted();
     error FundingNotMet();
     error InvalidParameters();
     error NotCampaignOwner();
-    error DeadlineExpired();
     error NotEnoughTokens();
-    error DeadlineTooShort();
+    error InsufficientFunds();
+    error AddressZeroDetected();
     error CampaignDoesNotExist();
+    error DeadlineExpired();
+
+
 
     event CampaignCancelled(
         uint256 indexed campaignId,
@@ -172,5 +181,48 @@ contract LaunchpadV2 is ReentrancyGuard {
     }
 
 
-   
+    function swapUsdcForToken(
+        uint32 _campaignId,
+        uint256 _usdcAmount,
+        uint256 _minTokenOut,
+        uint256 _deadline
+    ) external nonReentrant {
+        uint256 campaignCount = IParentContract(parentContract).campaignCount();
+        if (_campaignId == 0 || _campaignId > campaignCount) revert CampaignDoesNotExist();
+        if (_usdcAmount == 0) revert ZeroValueNotAllowed();
+        if (_deadline <= block.timestamp) revert DeadlineExpired();
+
+        CampaignInfo memory campaign =  IParentContract(parentContract)._getCampaignInfo(_campaignId);
+
+        if (!campaign.isFundingComplete) revert FundingNotMet();
+        if (campaign.uniswapPair == address(0)) revert InvalidParameters();
+
+        address token = campaign.tokenAddress;
+        IERC20 usdc = usdcToken;
+
+        // Check user has enough USDC
+        if (usdc.balanceOf(msg.sender) < _usdcAmount) revert NotEnoughTokens();
+
+        // Transfer USDC from user to this contract
+        usdc.safeTransferFrom(msg.sender, address(this), _usdcAmount);
+
+        // Approve router to spend USDC
+        usdc.approve(address(uniswapRouter), _usdcAmount);
+
+        // Set up swap path: USDC -> token
+        address[] memory path = new address[](2);
+        path[0] = address(usdc);
+        path[1] = address(token);
+
+        // Perform swap: sell exact USDC for minimum token
+        uniswapRouter.swapExactTokensForTokens(
+            _usdcAmount,
+            _minTokenOut,
+            path,
+            msg.sender,
+            _deadline
+        );
+    }
+
+    
 }
