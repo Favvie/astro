@@ -84,6 +84,11 @@ interface IParentContract {
 
     function usdcToken() external view returns (IERC20);
 
+    function userParticipatedCampaigns(address) external view returns (uint32[] memory);
+
+    function creatorCampaigns(address) external view returns (uint32[] memory);
+
+    function getUserInvestment(uint32 campaignId, address user) external view returns (uint128);
 }
 
 contract LaunchpadV2 is ReentrancyGuard {
@@ -106,10 +111,13 @@ contract LaunchpadV2 is ReentrancyGuard {
     error NotEnoughTokens();
     error InsufficientFunds();
     error AddressZeroDetected();
+    error InvalidSupply();
     error CampaignDoesNotExist();
     error DeadlineExpired();
-
-
+    error DeadlineTooShort();
+    error UserCannotClaimRefund();
+    error Unauthorized();
+    error InvalidInput();
 
     event CampaignCancelled(
         uint256 indexed campaignId,
@@ -224,5 +232,99 @@ contract LaunchpadV2 is ReentrancyGuard {
         );
     }
 
-    
+    function addLiquidityToPool(
+        uint32 _campaignId,
+        uint256 _tokenAmount,
+        uint256 _usdcAmount,
+        uint256 _minTokenLiquidity,
+        uint256 _minUsdcLiquidity,
+        uint256 _deadline
+    ) external nonReentrant {
+        uint256 campaignCount = IParentContract(parentContract).campaignCount();
+        if (_campaignId == 0 || _campaignId > campaignCount) revert CampaignDoesNotExist();
+        if (_tokenAmount == 0 || _usdcAmount == 0) revert ZeroValueNotAllowed();
+        if (_deadline <= block.timestamp) revert DeadlineExpired();
+
+        CampaignInfo memory campaign =  IParentContract(parentContract)._getCampaignInfo(_campaignId);
+
+        if (!campaign.isFundingComplete) revert FundingNotMet();
+        if (campaign.uniswapPair == address(0)) revert InvalidParameters();
+
+        address token = campaign.tokenAddress;
+
+        // Check balances
+        if (IERC20(token).balanceOf(msg.sender) < _tokenAmount) revert NotEnoughTokens();
+        if (usdcToken.balanceOf(msg.sender) < _usdcAmount) revert InsufficientFunds();
+
+        // Check allowances
+        if (IERC20(token).allowance(msg.sender, address(this)) < _tokenAmount) revert InsufficientFunds();
+        if (usdcToken.allowance(msg.sender, address(this)) < _usdcAmount) revert InsufficientFunds();
+
+        // Transfer tokens from user
+        IERC20(token).safeTransferFrom(msg.sender, address(this), _tokenAmount);
+        usdcToken.safeTransferFrom(msg.sender, address(this), _usdcAmount);
+
+        // Approve router
+        require(IERC20(token).approve(address(uniswapRouter), _tokenAmount), "Token approve failed");
+        require(usdcToken.approve(address(uniswapRouter), _usdcAmount), "USDC approve failed");
+
+        // Add liquidity
+        try uniswapRouter.addLiquidity(
+            address(token),
+            address(usdcToken),
+            _tokenAmount,
+            _usdcAmount,
+            _minTokenLiquidity,
+            _minUsdcLiquidity,
+            msg.sender, // LP tokens go to user
+            _deadline
+        ) {
+            // Success - liquidity added
+        } catch {
+            // If failed, return tokens to user
+            IERC20(token).safeTransfer(msg.sender, _tokenAmount);
+            usdcToken.safeTransfer(msg.sender, _usdcAmount);
+            revert("Failed to add liquidity");
+        }
+    }
+
+
+
+    function getUserParticipatedCampaignsWithInvestmentCheck(
+        address _user
+    ) external view returns (CampaignInfo[] memory) {
+        uint32 totalCampaigns = IParentContract(parentContract).campaignCount();
+        IParentContract extendedParent = IParentContract(address(parentContract));
+        
+        // First pass: count participated campaigns
+        uint32 participatedCount = 0;
+        for (uint32 i = 1; i <= totalCampaigns; i++) {
+            try extendedParent.getUserInvestment(i, _user) returns (uint128 investment) {
+                if (investment > 0) {
+                    participatedCount++;
+                }
+            } catch {
+                // Skip if function doesn't exist or reverts
+                continue;
+            }
+        }
+
+        // Second pass: populate array
+        CampaignInfo[] memory participatedCampaigns = new CampaignInfo[](participatedCount);
+        uint32 index = 0;
+        
+        for (uint32 i = 1; i <= totalCampaigns; i++) {
+            try extendedParent.getUserInvestment(i, _user) returns (uint128 investment) {
+                if (investment > 0) {
+                    participatedCampaigns[index] = IParentContract(parentContract)._getCampaignInfo(i);
+                    index++;
+                }
+            } catch {
+                continue;
+            }
+        }
+
+        return participatedCampaigns;
+    }
+
 }
