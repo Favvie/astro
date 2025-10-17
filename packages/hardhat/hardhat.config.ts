@@ -1,7 +1,9 @@
 import type { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
 
 const config: HardhatUserConfig = {
+  plugins: [hardhatToolboxMochaEthers, hardhatToolboxViemPlugin],
   solidity: {
     compilers: [
       {
