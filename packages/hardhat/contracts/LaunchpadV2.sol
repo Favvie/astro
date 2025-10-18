@@ -493,6 +493,12 @@ contract LaunchpadV2 is ReentrancyGuard {
     }    
 
 
+    /**
+     * @dev Get expected swap output for debugging
+     * @param _campaignId ID of the campaign
+     * @param _tokenAmountIn Amount of tokens to swap
+     * @return expectedUsdcOut Expected USDC output
+     */
     function getSwapAmountOut(
         uint32 _campaignId, 
         uint256 _tokenAmountIn
@@ -516,7 +522,12 @@ contract LaunchpadV2 is ReentrancyGuard {
         }
     }
 
-
+    /**
+     * @dev Get expected token output when swapping USDC
+     * @param _campaignId ID of the campaign
+     * @param _usdcAmountIn Amount of USDC to swap
+     * @return expectedTokenOut Expected token output
+     */
     function getTokenAmountOut(
         uint32 _campaignId, 
         uint256 _usdcAmountIn
@@ -540,7 +551,12 @@ contract LaunchpadV2 is ReentrancyGuard {
     }
 
 
-
+    /**
+     * @dev Get user's total investment across all campaigns
+     * @param _user The user's address
+     * @return totalInvestment Total USDC amount invested by the user
+     * @return campaignsParticipated Number of campaigns the user participated in
+     */
     function getUserTotalInvestment(address _user) 
         external 
         view 
