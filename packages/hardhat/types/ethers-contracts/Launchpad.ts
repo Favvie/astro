@@ -6,9 +6,9 @@ import type { TypedContractEvent, TypedDeferredTopicFilter, TypedEventLog, Typed
   
 export declare namespace Launchpad {
       
-    export type CampaignInfoStruct = {id: BigNumberish, creator: AddressLike, targetAmount: BigNumberish, amountRaised: BigNumberish, tokensSold: BigNumberish, totalSupply: BigNumberish, tokensForSale: BigNumberish, creatorAllocation: BigNumberish, liquidityAllocation: BigNumberish, platformFeeTokens: BigNumberish, deadline: BigNumberish, tokenAddress: AddressLike, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, name: string, symbol: string, description: string, reserveRatio: BigNumberish, blockNumberCreated: BigNumberish, promotionalOgPoints: BigNumberish, isPromoted: boolean, uniswapPair: AddressLike}
+    export type CampaignInfoStruct = {id: BigNumberish, creator: AddressLike, targetAmount: BigNumberish, amountRaised: BigNumberish, tokensSold: BigNumberish, totalSupply: BigNumberish, tokensForSale: BigNumberish, creatorAllocation: BigNumberish, liquidityAllocation: BigNumberish, platformFeeTokens: BigNumberish, deadline: BigNumberish, tokenAddress: AddressLike, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, name: string, symbol: string, description: string, tokenFileId: string, reserveRatio: BigNumberish, blockNumberCreated: BigNumberish, promotionalOgPoints: BigNumberish, isPromoted: boolean, uniswapPair: AddressLike}
 
-    export type CampaignInfoStructOutput = [id: bigint, creator: string, targetAmount: bigint, amountRaised: bigint, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, deadline: bigint, tokenAddress: string, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, name: string, symbol: string, description: string, reserveRatio: bigint, blockNumberCreated: bigint, promotionalOgPoints: bigint, isPromoted: boolean, uniswapPair: string] & {id: bigint, creator: string, targetAmount: bigint, amountRaised: bigint, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, deadline: bigint, tokenAddress: string, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, name: string, symbol: string, description: string, reserveRatio: bigint, blockNumberCreated: bigint, promotionalOgPoints: bigint, isPromoted: boolean, uniswapPair: string }
+    export type CampaignInfoStructOutput = [id: bigint, creator: string, targetAmount: bigint, amountRaised: bigint, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, deadline: bigint, tokenAddress: string, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, name: string, symbol: string, description: string, tokenFileId: string, reserveRatio: bigint, blockNumberCreated: bigint, promotionalOgPoints: bigint, isPromoted: boolean, uniswapPair: string] & {id: bigint, creator: string, targetAmount: bigint, amountRaised: bigint, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, deadline: bigint, tokenAddress: string, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, name: string, symbol: string, description: string, tokenFileId: string, reserveRatio: bigint, blockNumberCreated: bigint, promotionalOgPoints: bigint, isPromoted: boolean, uniswapPair: string }
   
     }
 
@@ -33,7 +33,7 @@ encodeFunctionData(functionFragment: 'campaignCount', values?: undefined): strin
 encodeFunctionData(functionFragment: 'campaigns', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'cancelCampaign', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'claimRefund', values: [BigNumberish]): string;
-encodeFunctionData(functionFragment: 'createCampaign', values: [string, string, string, BigNumberish, BigNumberish, BigNumberish, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'createCampaign', values: [string, string, string, string, BigNumberish, BigNumberish, BigNumberish, BigNumberish]): string;
 encodeFunctionData(functionFragment: 'creatorCampaigns', values: [AddressLike, BigNumberish]): string;
 encodeFunctionData(functionFragment: 'getUserInvestment', values: [BigNumberish, AddressLike]): string;
 encodeFunctionData(functionFragment: 'initialize', values: [AddressLike, AddressLike, AddressLike, AddressLike, BigNumberish]): string;
@@ -94,9 +94,9 @@ decodeFunctionResult(functionFragment: 'userParticipation', data: BytesLike): Re
   
 
     export namespace CampaignCreatedEvent {
-      export type InputTuple = [campaignId: BigNumberish, creator: AddressLike, name: string, targetFunding: BigNumberish, totalSupply: BigNumberish, deadline: BigNumberish];
-      export type OutputTuple = [campaignId: bigint, creator: string, name: string, targetFunding: bigint, totalSupply: bigint, deadline: bigint];
-      export interface OutputObject {campaignId: bigint, creator: string, name: string, targetFunding: bigint, totalSupply: bigint, deadline: bigint };
+      export type InputTuple = [campaignId: BigNumberish, creator: AddressLike, name: string, targetFunding: BigNumberish, totalSupply: BigNumberish, deadline: BigNumberish, tokenFileId: string];
+      export type OutputTuple = [campaignId: bigint, creator: string, name: string, targetFunding: bigint, totalSupply: bigint, deadline: bigint, tokenFileId: string];
+      export interface OutputObject {campaignId: bigint, creator: string, name: string, targetFunding: bigint, totalSupply: bigint, deadline: bigint, tokenFileId: string };
       export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>
       export type Filter = TypedDeferredTopicFilter<Event>
       export type Log = TypedEventLog<Event>
@@ -353,7 +353,7 @@ decodeFunctionResult(functionFragment: 'userParticipation', data: BytesLike): Re
     
     campaigns: TypedContractMethod<
       [arg0: BigNumberish, ],
-      [[string, string, string, bigint, bigint, bigint, bigint, bigint, boolean, boolean, boolean, boolean, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, string, string, string] & {creator: string, token: string, uniswapPair: string, targetAmount: bigint, amountRaised: bigint, deadline: bigint, reserveRatio: bigint, blockNumberCreated: bigint, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, isPromoted: boolean, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, promotionalOgPoints: bigint, id: bigint, name: string, symbol: string, description: string }],
+      [[string, string, string, bigint, bigint, bigint, bigint, bigint, boolean, boolean, boolean, boolean, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, string, string, string, string] & {creator: string, token: string, uniswapPair: string, targetAmount: bigint, amountRaised: bigint, deadline: bigint, reserveRatio: bigint, blockNumberCreated: bigint, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, isPromoted: boolean, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, promotionalOgPoints: bigint, id: bigint, name: string, symbol: string, description: string, tokenFileId: string }],
       'view'
     >
     
@@ -376,7 +376,7 @@ decodeFunctionResult(functionFragment: 'userParticipation', data: BytesLike): Re
 
     
     createCampaign: TypedContractMethod<
-      [_name: string, _symbol: string, _description: string, _targetFunding: BigNumberish, _totalSupply: BigNumberish, _reserveRatio: BigNumberish, _deadline: BigNumberish, ],
+      [_name: string, _symbol: string, _description: string, _tokenFileId: string, _targetFunding: BigNumberish, _totalSupply: BigNumberish, _reserveRatio: BigNumberish, _deadline: BigNumberish, ],
       [bigint],
       'nonpayable'
     >
@@ -556,7 +556,7 @@ getFunction(nameOrSignature: 'campaignCount'): TypedContractMethod<
     >;
 getFunction(nameOrSignature: 'campaigns'): TypedContractMethod<
       [arg0: BigNumberish, ],
-      [[string, string, string, bigint, bigint, bigint, bigint, bigint, boolean, boolean, boolean, boolean, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, string, string, string] & {creator: string, token: string, uniswapPair: string, targetAmount: bigint, amountRaised: bigint, deadline: bigint, reserveRatio: bigint, blockNumberCreated: bigint, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, isPromoted: boolean, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, promotionalOgPoints: bigint, id: bigint, name: string, symbol: string, description: string }],
+      [[string, string, string, bigint, bigint, bigint, bigint, bigint, boolean, boolean, boolean, boolean, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, string, string, string, string] & {creator: string, token: string, uniswapPair: string, targetAmount: bigint, amountRaised: bigint, deadline: bigint, reserveRatio: bigint, blockNumberCreated: bigint, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, isPromoted: boolean, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, promotionalOgPoints: bigint, id: bigint, name: string, symbol: string, description: string, tokenFileId: string }],
       'view'
     >;
 getFunction(nameOrSignature: 'cancelCampaign'): TypedContractMethod<
@@ -570,7 +570,7 @@ getFunction(nameOrSignature: 'claimRefund'): TypedContractMethod<
       'nonpayable'
     >;
 getFunction(nameOrSignature: 'createCampaign'): TypedContractMethod<
-      [_name: string, _symbol: string, _description: string, _targetFunding: BigNumberish, _totalSupply: BigNumberish, _reserveRatio: BigNumberish, _deadline: BigNumberish, ],
+      [_name: string, _symbol: string, _description: string, _tokenFileId: string, _targetFunding: BigNumberish, _totalSupply: BigNumberish, _reserveRatio: BigNumberish, _deadline: BigNumberish, ],
       [bigint],
       'nonpayable'
     >;
@@ -658,7 +658,7 @@ getEvent(key: 'UserParticipatedInCampaign'): TypedContractEvent<UserParticipated
       CampaignCancelled: TypedContractEvent<CampaignCancelledEvent.InputTuple, CampaignCancelledEvent.OutputTuple, CampaignCancelledEvent.OutputObject>;
     
 
-      'CampaignCreated(uint256,address,string,uint256,uint256,uint256)': TypedContractEvent<CampaignCreatedEvent.InputTuple, CampaignCreatedEvent.OutputTuple, CampaignCreatedEvent.OutputObject>;
+      'CampaignCreated(uint256,address,string,uint256,uint256,uint256,string)': TypedContractEvent<CampaignCreatedEvent.InputTuple, CampaignCreatedEvent.OutputTuple, CampaignCreatedEvent.OutputObject>;
       CampaignCreated: TypedContractEvent<CampaignCreatedEvent.InputTuple, CampaignCreatedEvent.OutputTuple, CampaignCreatedEvent.OutputObject>;
     
 
