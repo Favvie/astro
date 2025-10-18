@@ -417,7 +417,9 @@ contract LaunchpadV2 is ReentrancyGuard {
         );
     }
 
-
+    /**
+     * @dev Preview tokens received for USDC amount
+     */
     function previewPurchase(
         uint32 _campaignId,
         uint256 _usdcAmount
@@ -446,7 +448,14 @@ contract LaunchpadV2 is ReentrancyGuard {
     }
 
 
-
+      /**
+     * @dev Get all campaigns with pagination
+     * @param _offset Starting index for pagination (0-based)
+     * @param _limit Number of campaigns to return (max 50)
+     * @return campaignsLocal Array of campaign info
+     * @return total Total number of campaigns
+     * @return hasMore Whether there are more campaigns after this page
+     */
     function getAllCampaignsPaginated(
         uint32 _offset,
         uint32 _limit
@@ -482,5 +491,79 @@ contract LaunchpadV2 is ReentrancyGuard {
 
         return (campaignsLocal, total, hasMore);
     }    
+
+
+    function getSwapAmountOut(
+        uint32 _campaignId, 
+        uint256 _tokenAmountIn
+    ) external view returns (uint256 expectedUsdcOut) {
+        CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
+
+        
+        if (campaign.uniswapPair == address(0) || _tokenAmountIn == 0) {
+            return 0;
+        }
+
+        // Set up path
+        address[] memory path = new address[](2);
+        path[0] = campaign.tokenAddress;
+        path[1] = address(usdcToken);
+
+        try uniswapRouter.getAmountsOut(_tokenAmountIn, path) returns (uint[] memory amounts) {
+            return amounts[1]; // USDC amount out
+        } catch {
+            return 0;
+        }
+    }
+
+
+    function getTokenAmountOut(
+        uint32 _campaignId, 
+        uint256 _usdcAmountIn
+    ) external view returns (uint256 expectedTokenOut) {
+        CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
+        
+        if (campaign.uniswapPair == address(0) || _usdcAmountIn == 0) {
+            return 0;
+        }
+
+        // Set up path: USDC → Token
+        address[] memory path = new address[](2);
+        path[0] = address(usdcToken);
+        path[1] = campaign.tokenAddress;
+
+        try uniswapRouter.getAmountsOut(_usdcAmountIn, path) returns (uint[] memory amounts) {
+            return amounts[1]; // Token amount out
+        } catch {
+            return 0;
+        }
+    }
+
+
+
+    function getUserTotalInvestment(address _user) 
+        external 
+        view 
+        returns (uint256 totalInvestment, uint32 campaignsParticipated) 
+    {
+        if (_user == address(0)) revert AddressZeroDetected();
+        
+        uint32 totalCampaigns = IParentContract(parentContract).campaignCount();
+        IParentContract extendedParent = IParentContract(address(parentContract));
+        
+        for (uint32 i = 1; i <= totalCampaigns; i++) {
+            try extendedParent.getUserInvestment(i, _user) returns (uint128 investment) {
+                if (investment > 0) {
+                    totalInvestment += investment;
+                    campaignsParticipated++;
+                }
+            } catch {
+                // Skip if function doesn't exist or reverts
+                continue;
+            }
+        }
+        
+        return (totalInvestment, campaignsParticipated);
+    }
 
 }
