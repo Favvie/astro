@@ -336,7 +336,12 @@ contract LaunchpadV2 is ReentrancyGuard {
         return participatedCampaigns;
     }
 
-function getCampaignsByCreator(
+
+    /**
+     * @dev Get campaigns created by a user by iterating through all campaigns
+     * This is less gas efficient but works without modifying the parent contract
+     */
+    function getCampaignsByCreator(
         address _creator
     ) external view returns (CampaignInfo[] memory) {
         uint32 totalCampaigns = IParentContract(parentContract).campaignCount();
@@ -366,7 +371,15 @@ function getCampaignsByCreator(
     }
 
 
-
+    /**
+     * @dev Get summary statistics
+     * @return totalCampaigns Total number of campaigns
+     * @return activeCampaigns Number of active campaigns  
+     * @return completedCampaigns Number of completed campaigns
+     * @return cancelledCampaigns Number of cancelled campaigns
+     * @return expiredCampaigns Number of expired campaigns
+     * @return totalFundingRaised Total USDC raised across all campaigns
+     */
     function getSummaryStats() external view returns (
         uint256 totalCampaigns,
         uint256 activeCampaigns,
@@ -404,5 +417,70 @@ function getCampaignsByCreator(
         );
     }
 
-    
+
+    function previewPurchase(
+        uint32 _campaignId,
+        uint256 _usdcAmount
+    ) external view returns (uint256 tokensReceived) {
+
+        uint256 campaignCount = IParentContract(parentContract).campaignCount();
+
+        if (_campaignId == 0 || _campaignId > campaignCount) revert Launchpad.InvalidInput();
+        CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
+
+        if (
+            !campaign.isActive ||
+            campaign.isFundingComplete ||
+            campaign.isCancelled
+        ) {
+            return 0;
+        }
+
+        return
+            LaunchPadCore._calculatePurchaseReturn(
+                campaign.tokensForSale,
+                campaign.amountRaised,
+                campaign.reserveRatio,
+                _usdcAmount
+            );
+    }
+
+
+
+    function getAllCampaignsPaginated(
+        uint32 _offset,
+        uint32 _limit
+    )
+        external
+        view
+        returns (
+            CampaignInfo[] memory campaignsLocal,
+            uint32 total,
+            bool hasMore
+        )
+    {
+        if (_limit == 0 || _limit > 50) revert InvalidInput();
+
+        uint32 campaignCount = parentContract.campaignCount();
+        total = campaignCount;
+
+        if (_offset >= campaignCount) {
+            return (new CampaignInfo[](0), total, false);
+        }
+
+        uint32 remaining = campaignCount - _offset;
+        uint32 actualLimit = remaining > _limit ? _limit : remaining;
+
+        campaignsLocal = new CampaignInfo[](actualLimit);
+
+        for (uint32 i = 0; i < actualLimit; i++) {
+            uint32 campaignId = _offset + i + 1; // Campaign IDs start at 1
+            campaignsLocal[i] = parentContract._getCampaignInfo(campaignId);
+        }
+
+        hasMore = _offset + actualLimit < campaignCount;
+
+        return (campaignsLocal, total, hasMore);
+    }    
+
 }
