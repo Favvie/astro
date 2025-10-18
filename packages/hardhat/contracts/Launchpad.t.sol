@@ -76,7 +76,7 @@ contract LaunchpadTest is Test {
     uint128 public constant PROMOTION_FEE = 100 * 10 ** 18;
 
     // Events - redeclare for testing
-    event CampaignCreated(uint256 indexed campaignId, address indexed creator, string name, uint256 targetFunding, uint256 totalSupply, uint256 deadline, string tokenFileId);
+    event CampaignCreated(uint256 indexed campaignId, address indexed creator, string name, uint256 targetFunding, uint256 totalSupply, uint256 deadline, string tokenFileId, bool isDAOEnabled, string whitepaperFileId);
 
     function setUp() public {
         // Deploy mock contracts
@@ -109,13 +109,15 @@ contract LaunchpadTest is Test {
 
         // Expect the CampaignCreated event
         vm.expectEmit(true, true, false, true);
-        emit CampaignCreated(1, creator, name, targetFunding, totalSupply, deadline, tokenFileId);
+        emit CampaignCreated(1, creator, name, targetFunding, totalSupply, deadline, tokenFileId, false, "");
 
         uint32 campaignId = launchpad.createCampaign(
             name,
             symbol,
             description,
             tokenFileId,
+            "", // No whitepaper
+            false, // DAO not enabled
             targetFunding,
             totalSupply,
             reserveRatio,
@@ -133,6 +135,7 @@ contract LaunchpadTest is Test {
         assertEq(info.symbol, symbol, "Symbol mismatch");
         assertEq(info.description, description, "Description mismatch");
         assertEq(info.tokenFileId, tokenFileId, "Token file ID mismatch");
+        assertEq(info.whitepaperFileId, "", "Whitepaper file ID should be empty");
         assertEq(info.targetAmount, targetFunding, "Target amount mismatch");
         assertEq(info.totalSupply, totalSupply, "Total supply mismatch");
         assertEq(info.reserveRatio, reserveRatio, "Reserve ratio mismatch");
@@ -141,6 +144,7 @@ contract LaunchpadTest is Test {
         assertFalse(info.isFundingComplete, "Campaign should not be funded yet");
         assertFalse(info.isCancelled, "Campaign should not be cancelled");
         assertFalse(info.isPromoted, "Campaign should not be promoted");
+        assertFalse(info.isDAOEnabled, "DAO should not be enabled");
 
         // Verify allocations
         uint128 expectedTokensForSale = totalSupply * 5000 / 10000; // 50%
@@ -160,6 +164,7 @@ contract LaunchpadTest is Test {
         vm.startPrank(creator);
 
         string memory tokenFileId = "0.0.987654";
+        string memory whitepaperFileId = "0.0.111222";
         uint128 targetFunding = 5000 * 10 ** 18;
         uint128 totalSupply = 10_000_000 * 10 ** 18;
         uint32 reserveRatio = 300000; // 30%
@@ -168,8 +173,10 @@ contract LaunchpadTest is Test {
         uint32 campaignId = launchpad.createCampaign(
             "Hedera Token",
             "HBAR",
-            "Token with Hedera File Service image",
+            "Token with Hedera File Service image and whitepaper",
             tokenFileId,
+            whitepaperFileId,
+            true, // DAO enabled
             targetFunding,
             totalSupply,
             reserveRatio,
@@ -178,6 +185,8 @@ contract LaunchpadTest is Test {
 
         Launchpad.CampaignInfo memory info = launchpad._getCampaignInfo(campaignId);
         assertEq(info.tokenFileId, tokenFileId, "Token file ID should match Hedera file ID");
+        assertEq(info.whitepaperFileId, whitepaperFileId, "Whitepaper file ID should match");
+        assertTrue(info.isDAOEnabled, "DAO should be enabled");
 
         vm.stopPrank();
     }
@@ -191,6 +200,8 @@ contract LaunchpadTest is Test {
             "TEST",
             "Description",
             "0.0.123456",
+            "",
+            false,
             0, // Invalid: zero target funding
             1_000_000 * 10 ** 18,
             500000,
@@ -209,6 +220,8 @@ contract LaunchpadTest is Test {
             "TEST",
             "Description",
             "0.0.123456",
+            "",
+            false,
             1000 * 10 ** 18,
             100 * 10 ** 18, // Invalid: below MIN_TOTAL_SUPPLY
             500000,
@@ -227,6 +240,8 @@ contract LaunchpadTest is Test {
             "TEST",
             "Description",
             "0.0.123456",
+            "",
+            false,
             1000 * 10 ** 18,
             2_000_000_000_000 * 10 ** 18, // Invalid: above MAX_TOTAL_SUPPLY
             500000,
@@ -245,6 +260,8 @@ contract LaunchpadTest is Test {
             "TEST",
             "Description",
             "0.0.123456",
+            "",
+            false,
             1000 * 10 ** 18,
             1_000_000 * 10 ** 18,
             50000, // Invalid: below 100000 (10%)
@@ -263,6 +280,8 @@ contract LaunchpadTest is Test {
             "TEST",
             "Description",
             "0.0.123456",
+            "",
+            false,
             1000 * 10 ** 18,
             1_000_000 * 10 ** 18,
             950000, // Invalid: above 900000 (90%)
@@ -281,6 +300,8 @@ contract LaunchpadTest is Test {
             "TEST",
             "Description",
             "0.0.123456",
+            "",
+            false,
             1000 * 10 ** 18,
             1_000_000 * 10 ** 18,
             500000,
@@ -299,6 +320,8 @@ contract LaunchpadTest is Test {
             "TEST",
             "Description",
             "0.0.123456",
+            "",
+            false,
             1000 * 10 ** 18,
             1_000_000 * 10 ** 18,
             500000,
@@ -317,6 +340,8 @@ contract LaunchpadTest is Test {
             "ONE",
             "First token",
             "0.0.111111",
+            "",
+            false,
             1000 * 10 ** 18,
             1_000_000 * 10 ** 18,
             500000,
@@ -329,6 +354,8 @@ contract LaunchpadTest is Test {
             "TWO",
             "Second token",
             "0.0.222222",
+            "0.0.333333", // With whitepaper
+            true, // DAO enabled
             2000 * 10 ** 18,
             2_000_000 * 10 ** 18,
             600000,
@@ -346,6 +373,10 @@ contract LaunchpadTest is Test {
         assertEq(info2.name, "Token Two", "Second campaign name mismatch");
         assertEq(info1.tokenFileId, "0.0.111111", "First campaign file ID mismatch");
         assertEq(info2.tokenFileId, "0.0.222222", "Second campaign file ID mismatch");
+        assertEq(info1.whitepaperFileId, "", "First campaign should have no whitepaper");
+        assertEq(info2.whitepaperFileId, "0.0.333333", "Second campaign whitepaper mismatch");
+        assertFalse(info1.isDAOEnabled, "First campaign should not have DAO enabled");
+        assertTrue(info2.isDAOEnabled, "Second campaign should have DAO enabled");
 
         vm.stopPrank();
     }
@@ -358,6 +389,8 @@ contract LaunchpadTest is Test {
             "TEST",
             "A test token",
             "0.0.123456",
+            "",
+            false,
             1000 * 10 ** 18,
             1_000_000 * 10 ** 18,
             500000,

@@ -10,17 +10,27 @@ import type { TypedContractEvent, TypedDeferredTopicFilter, TypedEventLog, Typed
   
 
   export interface IParentContractInterface extends Interface {
-    getFunction(nameOrSignature: "_getCampaignInfo" | "campaignCount" | "getSummaryStats"): FunctionFragment;
+    getFunction(nameOrSignature: "_getCampaignInfo" | "campaignCount" | "campaigns" | "creatorCampaigns" | "getSummaryStats" | "getUserInvestment" | "usdcToken" | "userParticipatedCampaigns"): FunctionFragment;
 
     
 
     encodeFunctionData(functionFragment: '_getCampaignInfo', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'campaignCount', values?: undefined): string;
+encodeFunctionData(functionFragment: 'campaigns', values: [BigNumberish]): string;
+encodeFunctionData(functionFragment: 'creatorCampaigns', values: [AddressLike]): string;
 encodeFunctionData(functionFragment: 'getSummaryStats', values?: undefined): string;
+encodeFunctionData(functionFragment: 'getUserInvestment', values: [BigNumberish, AddressLike]): string;
+encodeFunctionData(functionFragment: 'usdcToken', values?: undefined): string;
+encodeFunctionData(functionFragment: 'userParticipatedCampaigns', values: [AddressLike]): string;
 
     decodeFunctionResult(functionFragment: '_getCampaignInfo', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'campaignCount', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'campaigns', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'creatorCampaigns', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'getSummaryStats', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'getUserInvestment', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'usdcToken', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'userParticipatedCampaigns', data: BytesLike): Result;
   }
 
   
@@ -75,9 +85,49 @@ decodeFunctionResult(functionFragment: 'getSummaryStats', data: BytesLike): Resu
     
 
     
+    campaigns: TypedContractMethod<
+      [arg0: BigNumberish, ],
+      [CampaignInfoStructOutput],
+      'view'
+    >
+    
+
+    
+    creatorCampaigns: TypedContractMethod<
+      [arg0: AddressLike, ],
+      [bigint[]],
+      'view'
+    >
+    
+
+    
     getSummaryStats: TypedContractMethod<
       [],
       [[bigint, bigint, bigint, bigint, bigint, bigint] & {totalCampaigns: bigint, activeCampaigns: bigint, completedCampaigns: bigint, cancelledCampaigns: bigint, expiredCampaigns: bigint, totalFundingRaised: bigint }],
+      'view'
+    >
+    
+
+    
+    getUserInvestment: TypedContractMethod<
+      [campaignId: BigNumberish, user: AddressLike, ],
+      [bigint],
+      'view'
+    >
+    
+
+    
+    usdcToken: TypedContractMethod<
+      [],
+      [string],
+      'view'
+    >
+    
+
+    
+    userParticipatedCampaigns: TypedContractMethod<
+      [arg0: AddressLike, ],
+      [bigint[]],
       'view'
     >
     
@@ -95,9 +145,34 @@ getFunction(nameOrSignature: 'campaignCount'): TypedContractMethod<
       [bigint],
       'view'
     >;
+getFunction(nameOrSignature: 'campaigns'): TypedContractMethod<
+      [arg0: BigNumberish, ],
+      [CampaignInfoStructOutput],
+      'view'
+    >;
+getFunction(nameOrSignature: 'creatorCampaigns'): TypedContractMethod<
+      [arg0: AddressLike, ],
+      [bigint[]],
+      'view'
+    >;
 getFunction(nameOrSignature: 'getSummaryStats'): TypedContractMethod<
       [],
       [[bigint, bigint, bigint, bigint, bigint, bigint] & {totalCampaigns: bigint, activeCampaigns: bigint, completedCampaigns: bigint, cancelledCampaigns: bigint, expiredCampaigns: bigint, totalFundingRaised: bigint }],
+      'view'
+    >;
+getFunction(nameOrSignature: 'getUserInvestment'): TypedContractMethod<
+      [campaignId: BigNumberish, user: AddressLike, ],
+      [bigint],
+      'view'
+    >;
+getFunction(nameOrSignature: 'usdcToken'): TypedContractMethod<
+      [],
+      [string],
+      'view'
+    >;
+getFunction(nameOrSignature: 'userParticipatedCampaigns'): TypedContractMethod<
+      [arg0: AddressLike, ],
+      [bigint[]],
       'view'
     >;
 

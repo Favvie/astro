@@ -28,7 +28,7 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
     error InsufficientBalance();
 
     // Packed events
-    event CampaignCreated(uint256 indexed campaignId, address indexed creator, string name, uint256 targetFunding, uint256 totalSupply, uint256 deadline, string tokenFileId);
+    event CampaignCreated(uint256 indexed campaignId, address indexed creator, string name, uint256 targetFunding, uint256 totalSupply, uint256 deadline, string tokenFileId, bool isDAOEnabled, string whitepaperFileId);
     event TokensPurchased(uint256 indexed campaignId, address indexed buyer, uint256 usdcAmount, uint256 tokensReceived, uint256 timestamp);
     event FundingCompleted(uint256 indexed campaignId, uint256 totalFunding);
     event LiquidityAdded(uint256 indexed campaignId, uint256 usdcAmount, uint256 tokensAmount);
@@ -53,7 +53,8 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         bool isFundingComplete;   // 1 byte
         bool isCancelled;         // 1 byte
         bool isPromoted;          // 1 byte
-        // Total: 112 bytes per slot optimization
+        bool isDAOEnabled;        // 1 byte - DAO governance enabled
+        // Total: 113 bytes per slot optimization
         
         // Second storage slot
         uint128 tokensSold;       // 16 bytes
@@ -70,7 +71,8 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         string name;
         string symbol;
         string description;
-        string tokenFileId; // Hedera File Service ID for token image
+        string tokenFileId;      // Hedera File Service ID for token image
+        string whitepaperFileId; // Optional: Hedera File Service ID for whitepaper
         mapping(address => uint128) investments; // reduced from uint256
     }
 
@@ -94,10 +96,12 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         string symbol;
         string description;
         string tokenFileId;
+        string whitepaperFileId;
         uint32 reserveRatio;
         uint32 blockNumberCreated;
         uint128 promotionalOgPoints;
         bool isPromoted;
+        bool isDAOEnabled;
         address uniswapPair;
     }
 
@@ -149,6 +153,8 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         string memory _symbol,
         string memory _description,
         string memory _tokenFileId,
+        string memory _whitepaperFileId,
+        bool _isDAOEnabled,
         uint128 _targetFunding,
         uint128 _totalSupply,
         uint32 _reserveRatio,
@@ -186,12 +192,14 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         c.symbol = _symbol;
         c.description = _description;
         c.tokenFileId = _tokenFileId;
+        c.whitepaperFileId = _whitepaperFileId;
+        c.isDAOEnabled = _isDAOEnabled;
         c.reserveRatio = _reserveRatio;
         c.blockNumberCreated = uint32(block.number);
 
         creatorCampaigns[msg.sender].push(campaignId);
 
-        emit CampaignCreated(campaignId, msg.sender, _name, _targetFunding, _totalSupply, _deadline, _tokenFileId);
+        emit CampaignCreated(campaignId, msg.sender, _name, _targetFunding, _totalSupply, _deadline, _tokenFileId, _isDAOEnabled, _whitepaperFileId);
     }
 
     function promoteCampaign(uint32 _campaignId) external {
@@ -374,11 +382,13 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
             symbol: c.symbol,
             description: c.description,
             tokenFileId: c.tokenFileId,
+            whitepaperFileId: c.whitepaperFileId,
             reserveRatio: c.reserveRatio,
             uniswapPair: c.uniswapPair,
             blockNumberCreated: c.blockNumberCreated,
             promotionalOgPoints: c.promotionalOgPoints,
-            isPromoted: c.isPromoted
+            isPromoted: c.isPromoted,
+            isDAOEnabled: c.isDAOEnabled
         });
     }
 
