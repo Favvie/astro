@@ -232,6 +232,15 @@ contract LaunchpadV2 is ReentrancyGuard {
         );
     }
 
+    /**
+     * @dev Add liquidity to existing pool (for users after campaign completion)
+     * @param _campaignId ID of the campaign
+     * @param _tokenAmount Amount of tokens to add
+     * @param _usdcAmount Amount of USDC to add
+     * @param _minTokenLiquidity Minimum tokens for liquidity
+     * @param _minUsdcLiquidity Minimum USDC for liquidity
+     * @param _deadline Transaction deadline
+     */
     function addLiquidityToPool(
         uint32 _campaignId,
         uint256 _tokenAmount,
@@ -327,4 +336,73 @@ contract LaunchpadV2 is ReentrancyGuard {
         return participatedCampaigns;
     }
 
+function getCampaignsByCreator(
+        address _creator
+    ) external view returns (CampaignInfo[] memory) {
+        uint32 totalCampaigns = IParentContract(parentContract).campaignCount();
+        
+        // First pass: count campaigns by this creator
+        uint32 creatorCampaignCount = 0;
+        for (uint32 i = 1; i <= totalCampaigns; i++) {
+            CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(i);
+            if (campaign.creator == _creator) {
+                creatorCampaignCount++;
+            }
+        }
+
+        // Second pass: populate the array
+        CampaignInfo[] memory campaignsLocal = new CampaignInfo[](creatorCampaignCount);
+        uint32 index = 0;
+        
+        for (uint32 i = 1; i <= totalCampaigns; i++) {
+            CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(i);
+            if (campaign.creator == _creator) {
+                campaignsLocal[index] = campaign;
+                index++;
+            }
+        }
+
+        return campaignsLocal;
+    }
+
+
+
+    function getSummaryStats() external view returns (
+        uint256 totalCampaigns,
+        uint256 activeCampaigns,
+        uint256 completedCampaigns, 
+        uint256 cancelledCampaigns,
+        uint256 expiredCampaigns,
+        uint256 totalFundingRaised
+    ) {
+    
+        uint256 campaignCount = IParentContract(parentContract).campaignCount();
+        for (uint32 i = 1; i <= campaignCount; i++) {
+            CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(i);
+            totalFundingRaised += campaign.amountRaised;
+            
+            if (campaign.isCancelled) {
+                cancelledCampaigns++;
+            } else if (campaign.isFundingComplete) {
+                completedCampaigns++;
+            } else if (block.timestamp > campaign.deadline) {
+                expiredCampaigns++;
+            } else {
+                activeCampaigns++;
+            }
+
+            totalCampaigns++;
+        }
+        
+        return (
+            totalCampaigns,
+            activeCampaigns,
+            completedCampaigns,
+            cancelledCampaigns,
+            expiredCampaigns,
+            totalFundingRaised
+        );
+    }
+
+    
 }
