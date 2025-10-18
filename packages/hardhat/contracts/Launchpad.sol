@@ -28,7 +28,7 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
     error InsufficientBalance();
 
     // Packed events
-    event CampaignCreated(uint256 indexed campaignId, address indexed creator, string name, uint256 targetFunding, uint256 totalSupply, uint256 deadline);
+    event CampaignCreated(uint256 indexed campaignId, address indexed creator, string name, uint256 targetFunding, uint256 totalSupply, uint256 deadline, string tokenFileId);
     event TokensPurchased(uint256 indexed campaignId, address indexed buyer, uint256 usdcAmount, uint256 tokensReceived, uint256 timestamp);
     event FundingCompleted(uint256 indexed campaignId, uint256 totalFunding);
     event LiquidityAdded(uint256 indexed campaignId, uint256 usdcAmount, uint256 tokensAmount);
@@ -70,6 +70,7 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         string name;
         string symbol;
         string description;
+        string tokenFileId; // Hedera File Service ID for token image
         mapping(address => uint128) investments; // reduced from uint256
     }
 
@@ -92,6 +93,7 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         string name;
         string symbol;
         string description;
+        string tokenFileId;
         uint32 reserveRatio;
         uint32 blockNumberCreated;
         uint128 promotionalOgPoints;
@@ -146,6 +148,7 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         string memory _name,
         string memory _symbol,
         string memory _description,
+        string memory _tokenFileId,
         uint128 _targetFunding,
         uint128 _totalSupply,
         uint32 _reserveRatio,
@@ -182,12 +185,13 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         c.name = _name;
         c.symbol = _symbol;
         c.description = _description;
+        c.tokenFileId = _tokenFileId;
         c.reserveRatio = _reserveRatio;
         c.blockNumberCreated = uint32(block.number);
 
         creatorCampaigns[msg.sender].push(campaignId);
 
-        emit CampaignCreated(campaignId, msg.sender, _name, _targetFunding, _totalSupply, _deadline);
+        emit CampaignCreated(campaignId, msg.sender, _name, _targetFunding, _totalSupply, _deadline, _tokenFileId);
     }
 
     function promoteCampaign(uint32 _campaignId) external {
@@ -349,7 +353,7 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
 
     function _getCampaignInfo(uint32 _campaignId) public view returns (CampaignInfo memory) {
         Campaign storage c = campaigns[_campaignId];
-        
+
         return CampaignInfo({
             id: c.id,
             creator: c.creator,
@@ -369,6 +373,7 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
             name: c.name,
             symbol: c.symbol,
             description: c.description,
+            tokenFileId: c.tokenFileId,
             reserveRatio: c.reserveRatio,
             uniswapPair: c.uniswapPair,
             blockNumberCreated: c.blockNumberCreated,
