@@ -156,6 +156,161 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "campaigns",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "creator",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "targetAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amountRaised",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokensSold",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalSupply",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokensForSale",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "creatorAllocation",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "liquidityAllocation",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "platformFeeTokens",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "isActive",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isFundingComplete",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isCancelled",
+            "type": "bool"
+          },
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "internalType": "uint32",
+            "name": "reserveRatio",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "blockNumberCreated",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "promotionalOgPoints",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "isPromoted",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "uniswapPair",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct CampaignInfo",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "creatorCampaigns",
+    "outputs": [
+      {
+        "internalType": "uint32[]",
+        "name": "",
+        "type": "uint32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getSummaryStats",
     "outputs": [
@@ -188,6 +343,62 @@
         "internalType": "uint256",
         "name": "totalFundingRaised",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "campaignId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "getUserInvestment",
+    "outputs": [
+      {
+        "internalType": "uint128",
+        "name": "",
+        "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "usdcToken",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "userParticipatedCampaigns",
+    "outputs": [
+      {
+        "internalType": "uint32[]",
+        "name": "",
+        "type": "uint32[]"
       }
     ],
     "stateMutability": "view",

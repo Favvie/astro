@@ -4,18 +4,42 @@
 import type { BaseContract, BigNumberish, BytesLike, FunctionFragment, Result, Interface, EventFragment, AddressLike, ContractRunner, ContractMethod, Listener } from "ethers"
 import type { TypedContractEvent, TypedDeferredTopicFilter, TypedEventLog, TypedLogDescription, TypedListener, TypedContractMethod } from "../common.js"
   
+    export type CampaignInfoStruct = {id: BigNumberish, creator: AddressLike, targetAmount: BigNumberish, amountRaised: BigNumberish, tokensSold: BigNumberish, totalSupply: BigNumberish, tokensForSale: BigNumberish, creatorAllocation: BigNumberish, liquidityAllocation: BigNumberish, platformFeeTokens: BigNumberish, deadline: BigNumberish, tokenAddress: AddressLike, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, name: string, symbol: string, description: string, reserveRatio: BigNumberish, blockNumberCreated: BigNumberish, promotionalOgPoints: BigNumberish, isPromoted: boolean, uniswapPair: AddressLike}
+
+    export type CampaignInfoStructOutput = [id: bigint, creator: string, targetAmount: bigint, amountRaised: bigint, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, deadline: bigint, tokenAddress: string, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, name: string, symbol: string, description: string, reserveRatio: bigint, blockNumberCreated: bigint, promotionalOgPoints: bigint, isPromoted: boolean, uniswapPair: string] & {id: bigint, creator: string, targetAmount: bigint, amountRaised: bigint, tokensSold: bigint, totalSupply: bigint, tokensForSale: bigint, creatorAllocation: bigint, liquidityAllocation: bigint, platformFeeTokens: bigint, deadline: bigint, tokenAddress: string, isActive: boolean, isFundingComplete: boolean, isCancelled: boolean, name: string, symbol: string, description: string, reserveRatio: bigint, blockNumberCreated: bigint, promotionalOgPoints: bigint, isPromoted: boolean, uniswapPair: string }
+  
 
   export interface LaunchpadV2Interface extends Interface {
-    getFunction(nameOrSignature: "swapTokenForUsdc" | "uniswapFactory" | "uniswapRouter" | "usdcToken"): FunctionFragment;
+    getFunction(nameOrSignature: "addLiquidityToPool" | "getAllCampaignsPaginated" | "getCampaignsByCreator" | "getSummaryStats" | "getSwapAmountOut" | "getTokenAmountOut" | "getUserParticipatedCampaignsWithInvestmentCheck" | "getUserTotalInvestment" | "previewPurchase" | "swapTokenForUsdc" | "swapUsdcForToken" | "uniswapFactory" | "uniswapRouter" | "usdcToken"): FunctionFragment;
 
     getEvent(nameOrSignatureOrTopic: "CampaignCancelled" | "RefundClaimed"): EventFragment;
 
-    encodeFunctionData(functionFragment: 'swapTokenForUsdc', values: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]): string;
+    encodeFunctionData(functionFragment: 'addLiquidityToPool', values: [BigNumberish, BigNumberish, BigNumberish, BigNumberish, BigNumberish, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'getAllCampaignsPaginated', values: [BigNumberish, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'getCampaignsByCreator', values: [AddressLike]): string;
+encodeFunctionData(functionFragment: 'getSummaryStats', values?: undefined): string;
+encodeFunctionData(functionFragment: 'getSwapAmountOut', values: [BigNumberish, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'getTokenAmountOut', values: [BigNumberish, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'getUserParticipatedCampaignsWithInvestmentCheck', values: [AddressLike]): string;
+encodeFunctionData(functionFragment: 'getUserTotalInvestment', values: [AddressLike]): string;
+encodeFunctionData(functionFragment: 'previewPurchase', values: [BigNumberish, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'swapTokenForUsdc', values: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'swapUsdcForToken', values: [BigNumberish, BigNumberish, BigNumberish, BigNumberish]): string;
 encodeFunctionData(functionFragment: 'uniswapFactory', values?: undefined): string;
 encodeFunctionData(functionFragment: 'uniswapRouter', values?: undefined): string;
 encodeFunctionData(functionFragment: 'usdcToken', values?: undefined): string;
 
-    decodeFunctionResult(functionFragment: 'swapTokenForUsdc', data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: 'addLiquidityToPool', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'getAllCampaignsPaginated', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'getCampaignsByCreator', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'getSummaryStats', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'getSwapAmountOut', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'getTokenAmountOut', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'getUserParticipatedCampaignsWithInvestmentCheck', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'getUserTotalInvestment', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'previewPurchase', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'swapTokenForUsdc', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'swapUsdcForToken', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'uniswapFactory', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'uniswapRouter', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'usdcToken', data: BytesLike): Result;
@@ -80,8 +104,88 @@ decodeFunctionResult(functionFragment: 'usdcToken', data: BytesLike): Result;
 
     
     
+    addLiquidityToPool: TypedContractMethod<
+      [_campaignId: BigNumberish, _tokenAmount: BigNumberish, _usdcAmount: BigNumberish, _minTokenLiquidity: BigNumberish, _minUsdcLiquidity: BigNumberish, _deadline: BigNumberish, ],
+      [void],
+      'nonpayable'
+    >
+    
+
+    
+    getAllCampaignsPaginated: TypedContractMethod<
+      [_offset: BigNumberish, _limit: BigNumberish, ],
+      [[CampaignInfoStructOutput[], bigint, boolean] & {campaignsLocal: CampaignInfoStructOutput[], total: bigint, hasMore: boolean }],
+      'view'
+    >
+    
+
+    
+    getCampaignsByCreator: TypedContractMethod<
+      [_creator: AddressLike, ],
+      [CampaignInfoStructOutput[]],
+      'view'
+    >
+    
+
+    
+    getSummaryStats: TypedContractMethod<
+      [],
+      [[bigint, bigint, bigint, bigint, bigint, bigint] & {totalCampaigns: bigint, activeCampaigns: bigint, completedCampaigns: bigint, cancelledCampaigns: bigint, expiredCampaigns: bigint, totalFundingRaised: bigint }],
+      'view'
+    >
+    
+
+    
+    getSwapAmountOut: TypedContractMethod<
+      [_campaignId: BigNumberish, _tokenAmountIn: BigNumberish, ],
+      [bigint],
+      'view'
+    >
+    
+
+    
+    getTokenAmountOut: TypedContractMethod<
+      [_campaignId: BigNumberish, _usdcAmountIn: BigNumberish, ],
+      [bigint],
+      'view'
+    >
+    
+
+    
+    getUserParticipatedCampaignsWithInvestmentCheck: TypedContractMethod<
+      [_user: AddressLike, ],
+      [CampaignInfoStructOutput[]],
+      'view'
+    >
+    
+
+    
+    getUserTotalInvestment: TypedContractMethod<
+      [_user: AddressLike, ],
+      [[bigint, bigint] & {totalInvestment: bigint, campaignsParticipated: bigint }],
+      'view'
+    >
+    
+
+    
+    previewPurchase: TypedContractMethod<
+      [_campaignId: BigNumberish, _usdcAmount: BigNumberish, ],
+      [bigint],
+      'view'
+    >
+    
+
+    
     swapTokenForUsdc: TypedContractMethod<
       [_campaignId: BigNumberish, _tokenAmount: BigNumberish, _minUsdcOut: BigNumberish, _deadline: BigNumberish, ],
+      [void],
+      'nonpayable'
+    >
+    
+
+    
+    swapUsdcForToken: TypedContractMethod<
+      [_campaignId: BigNumberish, _usdcAmount: BigNumberish, _minTokenOut: BigNumberish, _deadline: BigNumberish, ],
       [void],
       'nonpayable'
     >
@@ -114,8 +218,58 @@ decodeFunctionResult(functionFragment: 'usdcToken', data: BytesLike): Result;
 
     getFunction<T extends ContractMethod = ContractMethod>(key: string | FunctionFragment): T;
 
-    getFunction(nameOrSignature: 'swapTokenForUsdc'): TypedContractMethod<
+    getFunction(nameOrSignature: 'addLiquidityToPool'): TypedContractMethod<
+      [_campaignId: BigNumberish, _tokenAmount: BigNumberish, _usdcAmount: BigNumberish, _minTokenLiquidity: BigNumberish, _minUsdcLiquidity: BigNumberish, _deadline: BigNumberish, ],
+      [void],
+      'nonpayable'
+    >;
+getFunction(nameOrSignature: 'getAllCampaignsPaginated'): TypedContractMethod<
+      [_offset: BigNumberish, _limit: BigNumberish, ],
+      [[CampaignInfoStructOutput[], bigint, boolean] & {campaignsLocal: CampaignInfoStructOutput[], total: bigint, hasMore: boolean }],
+      'view'
+    >;
+getFunction(nameOrSignature: 'getCampaignsByCreator'): TypedContractMethod<
+      [_creator: AddressLike, ],
+      [CampaignInfoStructOutput[]],
+      'view'
+    >;
+getFunction(nameOrSignature: 'getSummaryStats'): TypedContractMethod<
+      [],
+      [[bigint, bigint, bigint, bigint, bigint, bigint] & {totalCampaigns: bigint, activeCampaigns: bigint, completedCampaigns: bigint, cancelledCampaigns: bigint, expiredCampaigns: bigint, totalFundingRaised: bigint }],
+      'view'
+    >;
+getFunction(nameOrSignature: 'getSwapAmountOut'): TypedContractMethod<
+      [_campaignId: BigNumberish, _tokenAmountIn: BigNumberish, ],
+      [bigint],
+      'view'
+    >;
+getFunction(nameOrSignature: 'getTokenAmountOut'): TypedContractMethod<
+      [_campaignId: BigNumberish, _usdcAmountIn: BigNumberish, ],
+      [bigint],
+      'view'
+    >;
+getFunction(nameOrSignature: 'getUserParticipatedCampaignsWithInvestmentCheck'): TypedContractMethod<
+      [_user: AddressLike, ],
+      [CampaignInfoStructOutput[]],
+      'view'
+    >;
+getFunction(nameOrSignature: 'getUserTotalInvestment'): TypedContractMethod<
+      [_user: AddressLike, ],
+      [[bigint, bigint] & {totalInvestment: bigint, campaignsParticipated: bigint }],
+      'view'
+    >;
+getFunction(nameOrSignature: 'previewPurchase'): TypedContractMethod<
+      [_campaignId: BigNumberish, _usdcAmount: BigNumberish, ],
+      [bigint],
+      'view'
+    >;
+getFunction(nameOrSignature: 'swapTokenForUsdc'): TypedContractMethod<
       [_campaignId: BigNumberish, _tokenAmount: BigNumberish, _minUsdcOut: BigNumberish, _deadline: BigNumberish, ],
+      [void],
+      'nonpayable'
+    >;
+getFunction(nameOrSignature: 'swapUsdcForToken'): TypedContractMethod<
+      [_campaignId: BigNumberish, _usdcAmount: BigNumberish, _minTokenOut: BigNumberish, _deadline: BigNumberish, ],
       [void],
       'nonpayable'
     >;

@@ -3,8 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./library/Math.sol";
 import "./library/LaunchpadCore.sol";
@@ -17,7 +16,7 @@ import "./Token.sol";
  * @dev A fundraising platform implementing the Bancor bonding curve with dynamic token allocations
  */
 
-contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
+contract Launchpad is ReentrancyGuard {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
@@ -70,6 +69,9 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         string name;
         string symbol;
         string description;
+
+        string iconFileid;
+        string whitepaperFileid;
         mapping(address => uint128) investments; // reduced from uint256
     }
 
@@ -97,6 +99,8 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         uint128 promotionalOgPoints;
         bool isPromoted;
         address uniswapPair;
+        string iconFileid;
+        string whitepaperFileid;
     }
 
     // Packed constants
@@ -131,8 +135,7 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         _;
     }
 
-    function initialize(address _contractOwner, address _usdcToken, address _uniswapRouter, address _uniswapFactory, uint128 _promotionFee) public initializer {
-        __ReentrancyGuard_init();
+    constructor(address _contractOwner, address _usdcToken, address _uniswapRouter, address _uniswapFactory, uint128 _promotionFee) {
         if (_usdcToken == address(0) || _uniswapRouter == address(0) || _uniswapFactory == address(0) || _contractOwner == address(0)) revert InvalidInput();
 
         usdcToken = IERC20(_usdcToken);
@@ -146,6 +149,8 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         string memory _name,
         string memory _symbol,
         string memory _description,
+        string memory _iconFileid,
+        string memory _whitepaperFileid,
         uint128 _targetFunding,
         uint128 _totalSupply,
         uint32 _reserveRatio,
@@ -184,6 +189,8 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         c.description = _description;
         c.reserveRatio = _reserveRatio;
         c.blockNumberCreated = uint32(block.number);
+        c.iconFileid = _iconFileid;
+        c.whitepaperFileid = _whitepaperFileid;
 
         creatorCampaigns[msg.sender].push(campaignId);
 
@@ -373,7 +380,9 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
             uniswapPair: c.uniswapPair,
             blockNumberCreated: c.blockNumberCreated,
             promotionalOgPoints: c.promotionalOgPoints,
-            isPromoted: c.isPromoted
+            isPromoted: c.isPromoted,
+            iconFileid: c.iconFileid,
+            whitepaperFileid: c.whitepaperFileid
         });
     }
 
