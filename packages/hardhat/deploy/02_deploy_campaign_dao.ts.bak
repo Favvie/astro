@@ -1,0 +1,131 @@
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { DeployFunction } from "hardhat-deploy/types";
+import { Contract } from "ethers";
+import { parseEther } from "ethers";
+
+/**
+ * Deploys the Campaign DAO Factory
+ * This factory creates a separate DAO for each campaign
+ *
+ * @param hre HardhatRuntimeEnvironment object.
+ */
+const deployCampaignDAO: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  const { deployer } = await hre.getNamedAccounts();
+  const { deploy } = hre.deployments;
+
+  console.log("\n📋 Deploying Campaign DAO System...");
+
+  // ============================================
+  // DEPLOY DAO FACTORY
+  // ============================================
+
+  console.log("\n🏭 Deploying CampaignDAOFactory...");
+  await deploy("CampaignDAOFactory", {
+    from: deployer,
+    args: [],
+    log: true,
+    autoMine: true,
+  });
+
+  const daoFactory = await hre.ethers.getContract<Contract>("CampaignDAOFactory", deployer);
+  console.log("✅ CampaignDAOFactory deployed at:", await daoFactory.getAddress());
+
+  // Get default parameters
+  const defaultParams = await daoFactory.defaultParameters();
+  console.log("\n📊 Default DAO Parameters:");
+  console.log("   Proposal Threshold:", defaultParams.proposalThreshold.toString(), "tokens");
+  console.log("   Voting Period:", Number(defaultParams.votingPeriod) / (24 * 60 * 60), "days");
+  console.log("   Quorum Required:", Number(defaultParams.quorumPercentage) / 100, "%");
+  console.log("   Majority Required:", Number(defaultParams.majorityPercentage) / 100, "%");
+
+  // ============================================
+  // EXAMPLE: CREATE A DAO FOR A CAMPAIGN
+  // ============================================
+
+  // Only create example if we have a test token
+  console.log("\n⚙️  Example: Creating a Campaign DAO");
+  console.log("ℹ️  In production, DAOs are created automatically when campaigns are created");
+
+  // For demonstration, let's deploy a sample token and create a DAO for it
+  console.log("\n🪙 Deploying Sample Campaign Token...");
+  await deploy("TokenFacet", {
+    from: deployer,
+    contract: "TokenFacet",
+    args: ["Sample Campaign Token", "SCT", deployer], // token owned by deployer initially
+    log: true,
+    autoMine: true,
+  });
+
+  const sampleToken = await hre.ethers.getContract<Contract>("TokenFacet", deployer);
+  console.log("✅ Sample Token deployed at:", await sampleToken.getAddress());
+
+  // Mint some tokens for testing
+  const mintAmount = parseEther("1000000"); // 1 million tokens
+  await sampleToken.mint(deployer, mintAmount);
+  console.log("✅ Minted", mintAmount.toString(), "tokens to deployer");
+
+  // Delegate voting power (REQUIRED for voting in DAO)
+  await sampleToken.delegate(deployer);
+  console.log("✅ Delegated voting power to deployer");
+
+  // Create a DAO for this campaign (DAO is enabled)
+  console.log("\n🏛️  Creating DAO for Sample Campaign...");
+  const isDAOEnabled = true; // Campaign opted in to DAO governance
+  const createTx = await daoFactory.createCampaignDAO(
+    await sampleToken.getAddress(), // campaign token
+    1, // campaign ID
+    deployer, // campaign creator
+    isDAOEnabled // DAO enabled flag
+  );
+  await createTx.wait();
+
+  const daoAddress = await daoFactory.getDAOByCampaign(1);
+  console.log("✅ Campaign DAO created at:", daoAddress);
+
+  // Get the DAO contract instance
+  const campaignDAO = await hre.ethers.getContractAt("CampaignDAO", daoAddress);
+
+  // Check DAO info
+  console.log("\n📊 Campaign DAO Information:");
+  console.log("   Campaign ID:", await campaignDAO.campaignId());
+  console.log("   Campaign Token:", await campaignDAO.campaignToken());
+  console.log("   Campaign Creator:", await campaignDAO.campaignCreator());
+  console.log("   Proposal Threshold:", (await campaignDAO.proposalThreshold()).toString());
+  console.log("   Voting Period:", Number(await campaignDAO.votingPeriod()) / (24 * 60 * 60), "days");
+
+  // Distribute some tokens to other addresses for testing
+  const [_, addr1, addr2] = await hre.ethers.getSigners();
+  await sampleToken.mint(addr1.address, parseEther("50000"));
+  await sampleToken.mint(addr2.address, parseEther("30000"));
+  console.log("\n✅ Distributed tokens to test addresses");
+
+  // Fund the DAO treasury
+  const treasuryFunding = parseEther("5"); // 5 ETH
+  const fundTx = await deployer.sendTransaction({
+    to: daoAddress,
+    value: treasuryFunding,
+  });
+  await fundTx.wait();
+  console.log("✅ Funded DAO treasury with", treasuryFunding.toString(), "wei");
+
+  // ============================================
+  // SUMMARY
+  // ============================================
+
+  console.log("\n🎉 Campaign DAO Deployment Complete!");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("DAO Factory:", await daoFactory.getAddress());
+  console.log("Sample Token:", await sampleToken.getAddress());
+  console.log("Sample DAO:", daoAddress);
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("\n📝 Integration Guide:");
+  console.log("1. When creating a campaign, call daoFactory.createCampaignDAO()");
+  console.log("2. Pass the campaign token address, campaign ID, and creator");
+  console.log("3. Token holders can now create proposals and vote");
+  console.log("4. Each campaign has its own independent governance");
+};
+
+export default deployCampaignDAO;
+
+// Tags for selective deployment
+deployCampaignDAO.tags = ["CampaignDAO", "DAOFactory"];

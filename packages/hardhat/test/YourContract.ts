@@ -1,6 +1,10 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+// import { getSigners, ethers } from "ethers";
+// import hre from "hardhat";
+import { network } from "hardhat";
 import { YourContract } from "../typechain-types";
+
+const { ethers } = await network.connect();
 
 describe("YourContract", function () {
   // We define a fixture to reuse the same setup in every test.

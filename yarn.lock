@@ -3684,6 +3684,7 @@ __metadata:
     ts-node: ~10.9.1
     typechain: ^8.3.2
     typescript: ^5.8.2
+    viem: ^2.38.3
   languageName: unknown
   linkType: soft
 
@@ -17219,6 +17220,27 @@ __metadata:
     typescript:
       optional: true
   checksum: 7737a6f0c7682970a14adee816ec8d1c7540a93036c70828c945373160bd23e0c7e60de2b612e30539b245d7adff1d79f5751373ef71fd8597c6331be2cc8421
+  languageName: node
+  linkType: hard
+
+"viem@npm:^2.38.3":
+  version: 2.38.3
+  resolution: "viem@npm:2.38.3"
+  dependencies:
+    "@noble/curves": 1.9.1
+    "@noble/hashes": 1.8.0
+    "@scure/bip32": 1.7.0
+    "@scure/bip39": 1.6.0
+    abitype: 1.1.0
+    isows: 1.0.7
+    ox: 0.9.6
+    ws: 8.18.3
+  peerDependencies:
+    typescript: ">=5.0.4"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: d27b8c766be1bc6bf7fb0127a477f332adf0035ecf004f30bbb738b8d8d4ecda88cc11017f1ab4cccc2206ab22a0734e1ca0c54aed1281ca9a168d4105bbdaa8
   languageName: node
   linkType: hard
 
