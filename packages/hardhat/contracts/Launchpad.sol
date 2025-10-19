@@ -3,7 +3,6 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "./library/Math.sol";
@@ -17,7 +16,7 @@ import "./Token.sol";
  * @dev A fundraising platform implementing the Bancor bonding curve with dynamic token allocations
  */
 
-contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
+contract Launchpad is ReentrancyGuardUpgradeable {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
@@ -76,34 +75,34 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         mapping(address => uint128) investments; // reduced from uint256
     }
 
-    struct CampaignInfo {
-        uint32 id;
-        address creator;
-        uint128 targetAmount;
-        uint128 amountRaised;
-        uint128 tokensSold;
-        uint128 totalSupply;
-        uint128 tokensForSale;
-        uint128 creatorAllocation;
-        uint128 liquidityAllocation;
-        uint128 platformFeeTokens;
-        uint64 deadline;
-        address tokenAddress;
-        bool isActive;
-        bool isFundingComplete;
-        bool isCancelled;
-        string name;
-        string symbol;
-        string description;
-        string tokenFileId;
-        string whitepaperFileId;
-        uint32 reserveRatio;
-        uint32 blockNumberCreated;
-        uint128 promotionalOgPoints;
-        bool isPromoted;
-        bool isDAOEnabled;
-        address uniswapPair;
-    }
+    // struct CampaignInfo {
+    //     uint32 id;
+    //     address creator;
+    //     uint128 targetAmount;
+    //     uint128 amountRaised;
+    //     uint128 tokensSold;
+    //     uint128 totalSupply;
+    //     uint128 tokensForSale;
+    //     uint128 creatorAllocation;
+    //     uint128 liquidityAllocation;
+    //     uint128 platformFeeTokens;
+    //     uint64 deadline;
+    //     address tokenAddress;
+    //     bool isActive;
+    //     bool isFundingComplete;
+    //     bool isCancelled;
+    //     string name;
+    //     string symbol;
+    //     string description;
+    //     string tokenFileId;
+    //     string whitepaperFileId;
+    //     uint32 reserveRatio;
+    //     uint32 blockNumberCreated;
+    //     uint128 promotionalOgPoints;
+    //     bool isPromoted;
+    //     bool isDAOEnabled;
+    //     address uniswapPair;
+    // }
 
     // Packed constants
     uint16 public constant TOKENS_FOR_SALE_PCT = 5000;
@@ -137,7 +136,7 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         _;
     }
 
-    function initialize(address _contractOwner, address _usdcToken, address _uniswapRouter, address _uniswapFactory, uint128 _promotionFee) public initializer {
+    constructor(address _contractOwner, address _usdcToken, address _uniswapRouter, address _uniswapFactory, uint128 _promotionFee) {
         __ReentrancyGuard_init();
         if (_usdcToken == address(0) || _uniswapRouter == address(0) || _uniswapFactory == address(0) || _contractOwner == address(0)) revert InvalidInput();
 
@@ -169,8 +168,6 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         uint128 creatorAllocation = _totalSupply * CREATOR_ALLOCATION_PCT / BASIS_POINTS;
         uint128 liquidityAllocation = _totalSupply * LIQUIDITY_ALLOCATION_PCT / BASIS_POINTS;
         uint128 platformFeeTokens = _totalSupply * platformFeePercentage / BASIS_POINTS;
-
-        require(tokensForSale + creatorAllocation + liquidityAllocation + platformFeeTokens <= _totalSupply, "Allocations exceed total supply");
 
         TokenFacet campaignToken = new TokenFacet(_name, _symbol, address(this));
 
@@ -252,11 +249,13 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         c.investments[msg.sender] += _usdcAmount;
 
         if (c.isPromoted && c.promotionalOgPoints > 0) {
-            uint256 percentage = (uint256(tokensToMint) * 1e18) / c.tokensForSale;
+            uint256 percentage = (tokensToMint * 1e18) / c.tokensForSale;
             uint128 awardedOgPoints = uint128((percentage * c.promotionalOgPoints) / 1e18);
+
             if (awardedOgPoints > c.promotionalOgPoints) {
                 awardedOgPoints = c.promotionalOgPoints;
             }
+
             ogPoints[msg.sender] += awardedOgPoints;
             c.promotionalOgPoints -= awardedOgPoints;
             emit OgPointsAwarded(_campaignId, msg.sender, awardedOgPoints);
@@ -286,8 +285,9 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
     function claimRefund(uint32 _campaignId) external nonReentrant {
         Campaign storage c = campaigns[_campaignId];
 
-        bool refundable = c.isCancelled || (uint64(block.timestamp) > c.deadline && !c.isFundingComplete);
-        if (!refundable) revert InvalidInput();
+        if (!(c.isCancelled || (uint64(block.timestamp) > c.deadline && !c.isFundingComplete))) {
+            revert InvalidInput();
+        }
 
         uint128 investment = c.investments[msg.sender];
         c.investments[msg.sender] = 0;
@@ -313,13 +313,14 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
 
         uint128 creatorFunding = c.amountRaised / 2;
         uint128 liquidityFunding = c.amountRaised - creatorFunding;
+        uint128 platformFee = (liquidityFunding * platformFeePercentage) / BASIS_POINTS;
 
         TokenFacet(address(c.token)).mint(c.creator, c.creatorAllocation);
         TokenFacet(address(c.token)).mint(address(this), c.platformFeeTokens);
 
         usdcToken.safeTransfer(c.creator, creatorFunding);
 
-        totalPlatformFees += (liquidityFunding * platformFeePercentage) / BASIS_POINTS;
+        totalPlatformFees += platformFee;
 
         _addLiquidity(_campaignId, liquidityFunding);
 
@@ -359,38 +360,41 @@ contract Launchpad is Initializable, ReentrancyGuardUpgradeable {
         }
     }
 
-    function _getCampaignInfo(uint32 _campaignId) public view returns (CampaignInfo memory) {
-        Campaign storage c = campaigns[_campaignId];
+    // function _getCampaignInfo(uint32 _campaignId) public view returns (CampaignInfo memory) {
+    //     Campaign storage c = campaigns[_campaignId];
 
-        return CampaignInfo({
-            id: c.id,
-            creator: c.creator,
-            targetAmount: c.targetAmount,
-            amountRaised: c.amountRaised,
-            tokensSold: c.tokensSold,
-            totalSupply: c.totalSupply,
-            tokensForSale: c.tokensForSale,
-            creatorAllocation: c.creatorAllocation,
-            liquidityAllocation: c.liquidityAllocation,
-            platformFeeTokens: c.platformFeeTokens,
-            deadline: c.deadline,
-            tokenAddress: address(c.token),
-            isActive: c.isActive,
-            isFundingComplete: c.isFundingComplete,
-            isCancelled: c.isCancelled,
-            name: c.name,
-            symbol: c.symbol,
-            description: c.description,
-            tokenFileId: c.tokenFileId,
-            whitepaperFileId: c.whitepaperFileId,
-            reserveRatio: c.reserveRatio,
-            uniswapPair: c.uniswapPair,
-            blockNumberCreated: c.blockNumberCreated,
-            promotionalOgPoints: c.promotionalOgPoints,
-            isPromoted: c.isPromoted,
-            isDAOEnabled: c.isDAOEnabled
-        });
+    //     return CampaignInfo({
+    //         id: c.id,
+    //         creator: c.creator,
+    //         targetAmount: c.targetAmount,
+    //         amountRaised: c.amountRaised,
+    //         tokensSold: c.tokensSold,
+    //         totalSupply: c.totalSupply,
+    //         tokensForSale: c.tokensForSale,
+    //         creatorAllocation: c.creatorAllocation,
+    //         liquidityAllocation: c.liquidityAllocation,
+    //         platformFeeTokens: c.platformFeeTokens,
+    //         deadline: c.deadline,
+    //         tokenAddress: address(c.token),
+    //         isActive: c.isActive,
+    //         isFundingComplete: c.isFundingComplete,
+    //         isCancelled: c.isCancelled,
+    //         name: c.name,
+    //         symbol: c.symbol,
+    //         description: c.description,
+    //         tokenFileId: c.tokenFileId,
+    //         whitepaperFileId: c.whitepaperFileId,
+    //         reserveRatio: c.reserveRatio,
+    //         uniswapPair: c.uniswapPair,
+    //         blockNumberCreated: c.blockNumberCreated,
+    //         promotionalOgPoints: c.promotionalOgPoints,
+    //         isPromoted: c.isPromoted,
+    //         isDAOEnabled: c.isDAOEnabled
+    //     });
+    // }
+
+
+    receive() external payable {
+        
     }
-
-    receive() external payable {}
 }
