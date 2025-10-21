@@ -1,0 +1,7 @@
+AstrodexFactory Contract deployed at: 0x061a4E295612b5a60E3A05eF883f74654bb2749D
+AstrodexRouter Contract deployed at: 0x14FCa1B39e7eBdBF34519004307a86548eCE08D0
+Usdc Contract deployed at: 0x82254d0f8C5091E79a5433f87ca7354a88FB1292
+Launchpad Contract deployed at: 0xCEadd06AE587CaD6eF922F91F18f26EB42180Bbb
+LaunchpadV2 Contract deployed at: 0x5F9A7Db4c568421a65E4cb6D1ef1457546156531
+
+CampaignDAOFactory Contract deployed at: 0x0DcA4343Fde8236276Fd1305DcEEAa13D56f9E35
