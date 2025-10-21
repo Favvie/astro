@@ -27,7 +27,7 @@ contract Launchpad is ReentrancyGuard {
     error InsufficientBalance();
 
     // Packed events
-    event CampaignCreated(uint256 indexed campaignId, address indexed creator, string name, uint256 targetFunding, uint256 totalSupply, uint256 deadline, string tokenFileId, bool isDAOEnabled, string whitepaperFileId);
+    event CampaignCreated(uint256 indexed campaignId, address indexed creator, string name, uint256 targetFunding, uint256 totalSupply, uint256 deadline);
     event TokensPurchased(uint256 indexed campaignId, address indexed buyer, uint256 usdcAmount, uint256 tokensReceived, uint256 timestamp);
     event FundingCompleted(uint256 indexed campaignId, uint256 totalFunding);
     event LiquidityAdded(uint256 indexed campaignId, uint256 usdcAmount, uint256 tokensAmount);
@@ -52,8 +52,7 @@ contract Launchpad is ReentrancyGuard {
         bool isFundingComplete;   // 1 byte
         bool isCancelled;         // 1 byte
         bool isPromoted;          // 1 byte
-        bool isDAOEnabled;        // 1 byte - DAO governance enabled
-        // Total: 113 bytes per slot optimization
+        // Total: 112 bytes per slot optimization
         
         // Second storage slot
         uint128 tokensSold;       // 16 bytes
@@ -95,13 +94,10 @@ contract Launchpad is ReentrancyGuard {
         string name;
         string symbol;
         string description;
-        string tokenFileId;
-        string whitepaperFileId;
         uint32 reserveRatio;
         uint32 blockNumberCreated;
         uint128 promotionalOgPoints;
         bool isPromoted;
-        bool isDAOEnabled;
         address uniswapPair;
         string iconFileid;
         string whitepaperFileid;
@@ -170,6 +166,8 @@ contract Launchpad is ReentrancyGuard {
         uint128 liquidityAllocation = _totalSupply * LIQUIDITY_ALLOCATION_PCT / BASIS_POINTS;
         uint128 platformFeeTokens = _totalSupply * platformFeePercentage / BASIS_POINTS;
 
+        require(tokensForSale + creatorAllocation + liquidityAllocation + platformFeeTokens <= _totalSupply, "Allocations exceed total supply");
+
         TokenFacet campaignToken = new TokenFacet(_name, _symbol, address(this));
 
         campaignId = ++campaignCount;
@@ -189,9 +187,6 @@ contract Launchpad is ReentrancyGuard {
         c.name = _name;
         c.symbol = _symbol;
         c.description = _description;
-        c.tokenFileId = _tokenFileId;
-        c.whitepaperFileId = _whitepaperFileId;
-        c.isDAOEnabled = _isDAOEnabled;
         c.reserveRatio = _reserveRatio;
         c.blockNumberCreated = uint32(block.number);
         c.iconFileid = _iconFileid;
@@ -199,7 +194,7 @@ contract Launchpad is ReentrancyGuard {
 
         creatorCampaigns[msg.sender].push(campaignId);
 
-        emit CampaignCreated(campaignId, msg.sender, _name, _targetFunding, _totalSupply, _deadline, _tokenFileId, _isDAOEnabled, _whitepaperFileId);
+        emit CampaignCreated(campaignId, msg.sender, _name, _targetFunding, _totalSupply, _deadline);
     }
 
     function promoteCampaign(uint32 _campaignId) external {
@@ -252,13 +247,11 @@ contract Launchpad is ReentrancyGuard {
         c.investments[msg.sender] += _usdcAmount;
 
         if (c.isPromoted && c.promotionalOgPoints > 0) {
-            uint256 percentage = (tokensToMint * 1e18) / c.tokensForSale;
+            uint256 percentage = (uint256(tokensToMint) * 1e18) / c.tokensForSale;
             uint128 awardedOgPoints = uint128((percentage * c.promotionalOgPoints) / 1e18);
-
             if (awardedOgPoints > c.promotionalOgPoints) {
                 awardedOgPoints = c.promotionalOgPoints;
             }
-
             ogPoints[msg.sender] += awardedOgPoints;
             c.promotionalOgPoints -= awardedOgPoints;
             emit OgPointsAwarded(_campaignId, msg.sender, awardedOgPoints);
@@ -288,9 +281,8 @@ contract Launchpad is ReentrancyGuard {
     function claimRefund(uint32 _campaignId) external nonReentrant {
         Campaign storage c = campaigns[_campaignId];
 
-        if (!(c.isCancelled || (uint64(block.timestamp) > c.deadline && !c.isFundingComplete))) {
-            revert InvalidInput();
-        }
+        bool refundable = c.isCancelled || (uint64(block.timestamp) > c.deadline && !c.isFundingComplete);
+        if (!refundable) revert InvalidInput();
 
         uint128 investment = c.investments[msg.sender];
         c.investments[msg.sender] = 0;
@@ -316,14 +308,13 @@ contract Launchpad is ReentrancyGuard {
 
         uint128 creatorFunding = c.amountRaised / 2;
         uint128 liquidityFunding = c.amountRaised - creatorFunding;
-        uint128 platformFee = (liquidityFunding * platformFeePercentage) / BASIS_POINTS;
 
         TokenFacet(address(c.token)).mint(c.creator, c.creatorAllocation);
         TokenFacet(address(c.token)).mint(address(this), c.platformFeeTokens);
 
         usdcToken.safeTransfer(c.creator, creatorFunding);
 
-        totalPlatformFees += platformFee;
+        totalPlatformFees += (liquidityFunding * platformFeePercentage) / BASIS_POINTS;
 
         _addLiquidity(_campaignId, liquidityFunding);
 
@@ -365,7 +356,7 @@ contract Launchpad is ReentrancyGuard {
 
     function _getCampaignInfo(uint32 _campaignId) public view returns (CampaignInfo memory) {
         Campaign storage c = campaigns[_campaignId];
-
+        
         return CampaignInfo({
             id: c.id,
             creator: c.creator,
@@ -385,8 +376,6 @@ contract Launchpad is ReentrancyGuard {
             name: c.name,
             symbol: c.symbol,
             description: c.description,
-            tokenFileId: c.tokenFileId,
-            whitepaperFileId: c.whitepaperFileId,
             reserveRatio: c.reserveRatio,
             uniswapPair: c.uniswapPair,
             blockNumberCreated: c.blockNumberCreated,
@@ -397,8 +386,5 @@ contract Launchpad is ReentrancyGuard {
         });
     }
 
-
-    receive() external payable {
-        
-    }
+    receive() external payable {}
 }
