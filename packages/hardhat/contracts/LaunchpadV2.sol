@@ -11,35 +11,57 @@ import "./Token.sol";
 import "./interfaces/IUniswapV2Router.sol";
 import "./interfaces/IUniswapV2Factory.sol";
 
-
-    struct CampaignInfo {
-        uint32 id;
-        address creator;
-        uint128 targetAmount;
-        uint128 amountRaised;
-        uint128 tokensSold;
-        uint128 totalSupply;
-        uint128 tokensForSale;
-        uint128 creatorAllocation;
-        uint128 liquidityAllocation;
-        uint128 platformFeeTokens;
-        uint64 deadline;
-        address tokenAddress;
-        bool isActive;
-        bool isFundingComplete;
-        bool isCancelled;
-        string name;
-        string symbol;
-        string description;
-        string tokenFileId;
-        string whitepaperFileId;
-        uint32 reserveRatio;
-        uint32 blockNumberCreated;
-        uint128 promotionalOgPoints;
-        bool isPromoted;
-        bool isDAOEnabled;
-        address uniswapPair;
-    }
+struct CampaignInfo {
+    uint256 id;
+    address creator;
+    uint256 targetAmount;
+    uint256 amountRaised;
+    uint256 tokensSold;
+    uint256 totalSupply;
+    uint256 tokensForSale;
+    uint256 creatorAllocation;
+    uint256 liquidityAllocation;
+    uint256 platformFeeTokens;
+    uint256 deadline;
+    address tokenAddress;
+    bool isActive;
+    bool isFundingComplete;
+    bool isCancelled;
+    string name;
+    string symbol;
+    string description;
+    uint32 reserveRatio;
+    uint256 blockNumberCreated;
+    uint256 promotionalOgPoints;
+    bool isPromoted;
+    address uniswapPair;
+}
+struct Campaign {
+    uint256 id;
+    address creator;
+    uint256 targetAmount;
+    uint256 amountRaised;
+    uint256 tokensSold;
+    uint256 totalSupply;
+    uint256 tokensForSale;
+    uint256 creatorAllocation;
+    uint256 liquidityAllocation;
+    uint256 platformFeeTokens;
+    uint256 deadline;
+    IERC20 token;
+    bool isActive;
+    bool isFundingComplete;
+    bool isCancelled;
+    string name;
+    string symbol;
+    string description;
+    uint32 reserveRatio;
+    address uniswapPair;
+    uint256 blockNumberCreated;
+    uint256 promotionalOgPoints;
+    bool isPromoted;
+    mapping(address => uint256) investments;
+}
 
 interface IParentContract {
     function getSummaryStats()
@@ -57,6 +79,8 @@ interface IParentContract {
     function campaignCount() external view returns (uint32);
 
     function campaigns(uint256) external view returns (CampaignInfo memory);
+
+    function _getCampaignInfo(uint32) external view returns (CampaignInfo memory);
 
     function usdcToken() external view returns (IERC20);
 
@@ -133,7 +157,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         if (_tokenAmount == 0) revert ZeroValueNotAllowed();
         if (_deadline <= block.timestamp) revert DeadlineExpired();
 
-        CampaignInfo memory campaign = IParentContract(parentContract).campaigns(_campaignId);
+        CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
 
         if (!campaign.isFundingComplete) revert FundingNotMet();
         if (campaign.uniswapPair == address(0)) revert InvalidParameters();
@@ -176,7 +200,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         if (_usdcAmount == 0) revert ZeroValueNotAllowed();
         if (_deadline <= block.timestamp) revert DeadlineExpired();
 
-        CampaignInfo memory campaign =  IParentContract(parentContract).campaigns(_campaignId);
+        CampaignInfo memory campaign =  IParentContract(parentContract)._getCampaignInfo(_campaignId);
 
         if (!campaign.isFundingComplete) revert FundingNotMet();
         if (campaign.uniswapPair == address(0)) revert InvalidParameters();
@@ -230,7 +254,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         if (_tokenAmount == 0 || _usdcAmount == 0) revert ZeroValueNotAllowed();
         if (_deadline <= block.timestamp) revert DeadlineExpired();
 
-        CampaignInfo memory campaign =  IParentContract(parentContract).campaigns(_campaignId);
+        CampaignInfo memory campaign =  IParentContract(parentContract)._getCampaignInfo(_campaignId);
 
         if (!campaign.isFundingComplete) revert FundingNotMet();
         if (campaign.uniswapPair == address(0)) revert InvalidParameters();
@@ -301,7 +325,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         for (uint32 i = 1; i <= totalCampaigns; i++) {
             try extendedParent.getUserInvestment(i, _user) returns (uint128 investment) {
                 if (investment > 0) {
-                    participatedCampaigns[index] = IParentContract(parentContract).campaigns(i);
+                    participatedCampaigns[index] = IParentContract(parentContract)._getCampaignInfo(i);
                     index++;
                 }
             } catch {
@@ -325,7 +349,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         // First pass: count campaigns by this creator
         uint32 creatorCampaignCount = 0;
         for (uint32 i = 1; i <= totalCampaigns; i++) {
-            CampaignInfo memory campaign = IParentContract(parentContract).campaigns(i);
+            CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(i);
             if (campaign.creator == _creator) {
                 creatorCampaignCount++;
             }
@@ -336,7 +360,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         uint32 index = 0;
         
         for (uint32 i = 1; i <= totalCampaigns; i++) {
-            CampaignInfo memory campaign = IParentContract(parentContract).campaigns(i);
+            CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(i);
             if (campaign.creator == _creator) {
                 campaignsLocal[index] = campaign;
                 index++;
@@ -367,7 +391,7 @@ contract LaunchpadV2 is ReentrancyGuard {
     
         uint256 campaignCount = IParentContract(parentContract).campaignCount();
         for (uint32 i = 1; i <= campaignCount; i++) {
-            CampaignInfo memory campaign = IParentContract(parentContract).campaigns(i);
+            CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(i);
             totalFundingRaised += campaign.amountRaised;
             
             if (campaign.isCancelled) {
@@ -404,7 +428,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         uint256 campaignCount = IParentContract(parentContract).campaignCount();
 
         if (_campaignId == 0 || _campaignId > campaignCount) revert Launchpad.InvalidInput();
-        CampaignInfo memory campaign = IParentContract(parentContract).campaigns(_campaignId);
+        CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
 
         if (
             !campaign.isActive ||
@@ -460,7 +484,7 @@ contract LaunchpadV2 is ReentrancyGuard {
 
         for (uint32 i = 0; i < actualLimit; i++) {
             uint32 campaignId = _offset + i + 1; // Campaign IDs start at 1
-            campaignsLocal[i] = parentContract.campaigns(campaignId);
+            campaignsLocal[i] = parentContract._getCampaignInfo(campaignId);
         }
 
         hasMore = _offset + actualLimit < campaignCount;

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
@@ -12,16 +11,14 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  *
  * Features:
  * - Campaign-specific governance
- * - Snapshot-based voting (prevents vote buying and double counting)
- * - Token-weighted voting (based on delegated voting power)
+ * - Token-weighted voting (based on token balance)
  * - Proposal creation by token holders with title and description
  * - Time-bound voting periods
  * - Quorum and majority requirements
  * - Treasury management for campaign funds
  * - Security: ReentrancyGuard, checks-effects-interactions pattern
  *
- * IMPORTANT: Token holders must delegate their voting power before they can vote or create proposals.
- * Use token.delegate(address) to delegate to yourself or others.
+ * NOTE: This uses simple balance-based voting. Users can vote with their current token balance.
  */
 contract CampaignDAO is ReentrancyGuard {
 
@@ -29,11 +26,8 @@ contract CampaignDAO is ReentrancyGuard {
     // STATE VARIABLES
     // ============================================
 
-    /// @notice The campaign token used for voting (with snapshot capabilities)
+    /// @notice The campaign token used for voting
     IERC20 public immutable campaignToken;
-
-    /// @notice The campaign token cast to ERC20Votes for snapshot functionality
-    ERC20Votes private immutable campaignTokenVotes;
 
     /// @notice Campaign ID this DAO governs
     uint256 public immutable campaignId;
@@ -92,7 +86,6 @@ contract CampaignDAO is ReentrancyGuard {
         address target;         // Target contract for execution
         uint256 value;          // ETH/USDC value to send
         bytes callData;         // Function call data
-        uint256 snapshotSupply; // Total token supply at proposal creation
     }
 
     // ============================================
@@ -182,7 +175,6 @@ contract CampaignDAO is ReentrancyGuard {
         require(_majorityPercentage <= 10000, "Majority must be <= 100%");
 
         campaignToken = IERC20(_campaignToken);
-        campaignTokenVotes = ERC20Votes(_campaignToken);
         campaignId = _campaignId;
         campaignCreator = _campaignCreator;
         proposalThreshold = _proposalThreshold;
@@ -211,10 +203,10 @@ contract CampaignDAO is ReentrancyGuard {
         uint256 _value,
         bytes memory _callData
     ) external returns (uint256) {
-        // Check if proposer has minimum required voting power (delegated tokens)
+        // Check if proposer has minimum required tokens
         require(
-            campaignTokenVotes.getVotes(msg.sender) >= proposalThreshold,
-            "Insufficient voting power to create proposal"
+            campaignToken.balanceOf(msg.sender) >= proposalThreshold,
+            "Insufficient tokens to create proposal"
         );
 
         require(bytes(_title).length > 0, "Empty title");
@@ -227,10 +219,6 @@ contract CampaignDAO is ReentrancyGuard {
         // Calculate voting period
         uint256 startTime = block.timestamp;
         uint256 endTime = startTime + votingPeriod;
-
-        // Snapshot total supply for quorum calculation
-        // Use getPastTotalSupply to get supply at proposal start time
-        uint256 snapshotSupply = campaignTokenVotes.getPastTotalSupply(block.timestamp - 1);
 
         // Create proposal
         proposals[proposalId] = Proposal({
@@ -246,8 +234,7 @@ contract CampaignDAO is ReentrancyGuard {
             executed: false,
             target: _target,
             value: _value,
-            callData: _callData,
-            snapshotSupply: snapshotSupply
+            callData: _callData
         });
 
         emit ProposalCreated(
@@ -279,10 +266,9 @@ contract CampaignDAO is ReentrancyGuard {
         require(block.timestamp <= proposal.endTime, "Voting ended");
         require(!hasVoted[_proposalId][msg.sender], "Already voted");
 
-        // Get voting weight (snapshot at proposal creation time)
-        // This prevents vote buying and double counting
-        uint256 weight = campaignTokenVotes.getPastVotes(msg.sender, proposal.startTime - 1);
-        require(weight > 0, "No voting power");
+        // Get voting weight (current token balance)
+        uint256 weight = campaignToken.balanceOf(msg.sender);
+        require(weight > 0, "No tokens to vote");
 
         // Record vote
         hasVoted[_proposalId][msg.sender] = true;
@@ -362,8 +348,9 @@ contract CampaignDAO is ReentrancyGuard {
         // Check if proposal passed
         uint256 totalVotes = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
 
-        // Check quorum (minimum participation)
-        bool quorumReached = (totalVotes * 10000) >= (proposal.snapshotSupply * quorumPercentage);
+        // Check quorum (minimum participation) using current total supply
+        uint256 currentSupply = campaignToken.totalSupply();
+        bool quorumReached = (totalVotes * 10000) >= (currentSupply * quorumPercentage);
 
         // Check majority (minimum approval)
         uint256 totalDecisiveVotes = proposal.forVotes + proposal.againstVotes;
@@ -409,22 +396,12 @@ contract CampaignDAO is ReentrancyGuard {
     }
 
     /**
-     * @notice Get current voting power of an address
+     * @notice Get current voting power of an address (token balance)
      * @param _voter Address to check
-     * @return Current delegated voting power (must delegate to self or others to have voting power)
+     * @return Current token balance
      */
     function getVotingPower(address _voter) external view returns (uint256) {
-        return campaignTokenVotes.getVotes(_voter);
-    }
-
-    /**
-     * @notice Get voting power at a specific timestamp (for checking historical voting power)
-     * @param _voter Address to check
-     * @param _timestamp Timestamp to check voting power at
-     * @return Voting power at that timestamp
-     */
-    function getPastVotingPower(address _voter, uint256 _timestamp) external view returns (uint256) {
-        return campaignTokenVotes.getPastVotes(_voter, _timestamp);
+        return campaignToken.balanceOf(_voter);
     }
 
     // ============================================

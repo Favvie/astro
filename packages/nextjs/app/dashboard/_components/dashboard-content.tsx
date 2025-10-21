@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import CreateCampaignDrawer from "./create-campaign-drawer";
+import Faucet from "./faucet";
+import TableRow from "./table-row";
 import { ArrowDown, BrushCleaning, ExpandIcon, Gift, Search, SortAsc } from "lucide-react";
 import { useAccount } from "wagmi";
 import { Badge } from "~~/components/ui/badge";
@@ -8,9 +10,11 @@ import { Button } from "~~/components/ui/button";
 import { Card } from "~~/components/ui/card";
 import { Input } from "~~/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "~~/components/ui/select";
+import { Skeleton } from "~~/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~~/components/ui/tabs";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 import { formatAmount } from "~~/lib/utils";
+import { ICampaign } from "~~/types/interface";
 
 export function DashboardContent() {
   const { address: connectedAddress } = useAccount();
@@ -27,62 +31,66 @@ export function DashboardContent() {
     args: [connectedAddress],
   });
 
-  const campaignsByCreator = useMemo(() => {
+  const campaignsByCreator = useMemo((): ICampaign[] => {
     if (!rawCampaignsByCreator) return [];
-    return rawCampaignsByCreator.map((c: any) => ({
-      id: Number(c.id),
-      creator: c.creator,
-      targetAmount: Number(c.targetAmount / 10n ** 6n),
-      amountRaised: Number(c.amountRaised / 10n ** 6n),
-      tokensSold: Number(c.tokensSold / 10n ** 18n),
-      totalSupply: Number(c.totalSupply / 10n ** 18n),
-      tokensForSale: Number(c.tokensForSale / 10n ** 18n),
-      creatorAllocation: Number(c.creatorAllocation / 10n ** 18n),
-      liquidityAllocation: Number(c.liquidityAllocation / 10n ** 18n),
-      platformFeeTokens: Number(c.platformFeeTokens / 10n ** 18n),
-      deadline: Number(c.deadline),
-      tokenAddress: c.tokenAddress, // mapping tokenAddress to token
-      isActive: c.isActive,
-      isFundingComplete: c.isFundingComplete,
-      isCancelled: c.isCancelled,
-      name: c.name,
-      symbol: c.symbol,
-      description: c.description,
-      reserveRatio: Number(c.reserveRatio),
-      blockNumberCreated: Number(c.blockNumberCreated),
-      ogPoints: c.promotionalOgPoints ? Number(c.promotionalOgPoints) : undefined,
-      isPromoted: c.isPromoted,
-      uniswapPair: c.uniswapPair,
-    }));
+    return rawCampaignsByCreator?.map(
+      (c: any): ICampaign => ({
+        id: Number(c.id),
+        creator: c.creator,
+        targetAmount: Number(c.targetAmount / 10n ** 6n),
+        amountRaised: Number(c.amountRaised / 10n ** 6n),
+        tokensSold: Number(c.tokensSold / 10n ** 18n),
+        totalSupply: Number(c.totalSupply / 10n ** 18n),
+        tokensForSale: Number(c.tokensForSale / 10n ** 18n),
+        creatorAllocation: Number(c.creatorAllocation / 10n ** 18n),
+        liquidityAllocation: Number(c.liquidityAllocation / 10n ** 18n),
+        platformFeeTokens: Number(c.platformFeeTokens / 10n ** 18n),
+        deadline: Number(c.deadline),
+        tokenAddress: c.tokenAddress, // mapping tokenAddress to token
+        isActive: c.isActive,
+        isFundingComplete: c.isFundingComplete,
+        isCancelled: c.isCancelled,
+        name: c.name,
+        symbol: c.symbol,
+        description: c.description,
+        reserveRatio: Number(c.reserveRatio),
+        blockNumberCreated: Number(c.blockNumberCreated),
+        // ogPoints: c.promotionalOgPoints ? Number(c.promotionalOgPoints) : undefined,
+        isPromoted: c.isPromoted,
+        uniswapPair: c.uniswapPair,
+      }),
+    );
   }, [rawCampaignsByCreator]);
 
-  const usersParticipatedCampaigns = useMemo(() => {
+  const usersParticipatedCampaigns = useMemo((): ICampaign[] => {
     if (!rawusersParticipatedCampaigns) return [];
-    return rawusersParticipatedCampaigns.map((c: any) => ({
-      id: Number(c.id),
-      creator: c.creator,
-      targetAmount: Number(c.targetAmount / 10n ** 6n),
-      amountRaised: Number(c.amountRaised / 10n ** 6n),
-      tokensSold: Number(c.tokensSold / 10n ** 18n),
-      totalSupply: Number(c.totalSupply / 10n ** 18n),
-      tokensForSale: Number(c.tokensForSale / 10n ** 18n),
-      creatorAllocation: Number(c.creatorAllocation / 10n ** 18n),
-      liquidityAllocation: Number(c.liquidityAllocation / 10n ** 18n),
-      platformFeeTokens: Number(c.platformFeeTokens / 10n ** 18n),
-      deadline: Number(c.deadline),
-      tokenAddress: c.tokenAddress, // mapping tokenAddress to token
-      isActive: c.isActive,
-      isFundingComplete: c.isFundingComplete,
-      isCancelled: c.isCancelled,
-      name: c.name,
-      symbol: c.symbol,
-      description: c.description,
-      reserveRatio: Number(c.reserveRatio),
-      blockNumberCreated: Number(c.blockNumberCreated),
-      ogPoints: c.promotionalOgPoints ? Number(c.promotionalOgPoints) : undefined,
-      isPromoted: c.isPromoted,
-      uniswapPair: c.uniswapPair,
-    }));
+    return rawusersParticipatedCampaigns?.map(
+      (c: any): ICampaign => ({
+        id: Number(c.id),
+        creator: c.creator,
+        targetAmount: Number(c.targetAmount / 10n ** 6n),
+        amountRaised: Number(c.amountRaised / 10n ** 6n),
+        tokensSold: Number(c.tokensSold / 10n ** 18n),
+        totalSupply: Number(c.totalSupply / 10n ** 18n),
+        tokensForSale: Number(c.tokensForSale / 10n ** 18n),
+        creatorAllocation: Number(c.creatorAllocation / 10n ** 18n),
+        liquidityAllocation: Number(c.liquidityAllocation / 10n ** 18n),
+        platformFeeTokens: Number(c.platformFeeTokens / 10n ** 18n),
+        deadline: Number(c.deadline),
+        tokenAddress: c.tokenAddress, // mapping tokenAddress to token
+        isActive: c.isActive,
+        isFundingComplete: c.isFundingComplete,
+        isCancelled: c.isCancelled,
+        name: c.name,
+        symbol: c.symbol,
+        description: c.description,
+        reserveRatio: Number(c.reserveRatio),
+        blockNumberCreated: Number(c.blockNumberCreated),
+        // ogPoints: c.promotionalOgPoints ? Number(c.promotionalOgPoints) : undefined,
+        isPromoted: c.isPromoted,
+        uniswapPair: c.uniswapPair,
+      }),
+    );
   }, [rawusersParticipatedCampaigns]);
 
   const { data: usertotalInvestment } = useScaffoldReadContract({
@@ -165,6 +173,9 @@ export function DashboardContent() {
                   Rewards
                 </Button>
               </div>
+            </div>
+            <div className="sm:hidden">
+              <Faucet />
             </div>
           </div>
         </div>
@@ -250,6 +261,14 @@ export function DashboardContent() {
                   <div>Status</div>
                   <div>Indulge</div>
                 </div>
+
+                <div className="space-y-3">
+                  {!campaignsByCreator
+                    ? Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton className="h-20 bg-[#070907]/50 w-full rounded-2xl" key={i} />
+                      ))
+                    : campaignsByCreator?.map(campaign => <TableRow key={campaign.id} campaign={campaign} />)}
+                </div>
               </div>
             ) : (
               <Card className="bg-[#19242a] border-[#3e545f] h-64">
@@ -328,6 +347,16 @@ export function DashboardContent() {
                   </div>
                   <div>Status</div>
                   <div>Indulge</div>
+                </div>
+
+                <div className="space-y-3">
+                  {!usersParticipatedCampaigns
+                    ? Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton className="h-20 bg-[#070907]/50 w-full rounded-2xl" key={i} />
+                      ))
+                    : usersParticipatedCampaigns
+                        ?.reverse()
+                        .map(campaign => <TableRow key={campaign.id} campaign={campaign} />)}
                 </div>
               </div>
             ) : (

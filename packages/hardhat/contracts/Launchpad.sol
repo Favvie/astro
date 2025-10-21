@@ -3,8 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./library/Math.sol";
 import "./library/LaunchpadCore.sol";
 import "./interfaces/IUniswapV2Router.sol";
@@ -16,7 +15,7 @@ import "./Token.sol";
  * @dev A fundraising platform implementing the Bancor bonding curve with dynamic token allocations
  */
 
-contract Launchpad is ReentrancyGuardUpgradeable {
+contract Launchpad is ReentrancyGuard {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
@@ -75,34 +74,34 @@ contract Launchpad is ReentrancyGuardUpgradeable {
         mapping(address => uint128) investments; // reduced from uint256
     }
 
-    // struct CampaignInfo {
-    //     uint32 id;
-    //     address creator;
-    //     uint128 targetAmount;
-    //     uint128 amountRaised;
-    //     uint128 tokensSold;
-    //     uint128 totalSupply;
-    //     uint128 tokensForSale;
-    //     uint128 creatorAllocation;
-    //     uint128 liquidityAllocation;
-    //     uint128 platformFeeTokens;
-    //     uint64 deadline;
-    //     address tokenAddress;
-    //     bool isActive;
-    //     bool isFundingComplete;
-    //     bool isCancelled;
-    //     string name;
-    //     string symbol;
-    //     string description;
-    //     string tokenFileId;
-    //     string whitepaperFileId;
-    //     uint32 reserveRatio;
-    //     uint32 blockNumberCreated;
-    //     uint128 promotionalOgPoints;
-    //     bool isPromoted;
-    //     bool isDAOEnabled;
-    //     address uniswapPair;
-    // }
+    struct CampaignInfo {
+        uint32 id;
+        address creator;
+        uint128 targetAmount;
+        uint128 amountRaised;
+        uint128 tokensSold;
+        uint128 totalSupply;
+        uint128 tokensForSale;
+        uint128 creatorAllocation;
+        uint128 liquidityAllocation;
+        uint128 platformFeeTokens;
+        uint64 deadline;
+        address tokenAddress;
+        bool isActive;
+        bool isFundingComplete;
+        bool isCancelled;
+        string name;
+        string symbol;
+        string description;
+        string tokenFileId;
+        string whitepaperFileId;
+        uint32 reserveRatio;
+        uint32 blockNumberCreated;
+        uint128 promotionalOgPoints;
+        bool isPromoted;
+        bool isDAOEnabled;
+        address uniswapPair;
+    }
 
     // Packed constants
     uint16 public constant TOKENS_FOR_SALE_PCT = 5000;
@@ -137,7 +136,6 @@ contract Launchpad is ReentrancyGuardUpgradeable {
     }
 
     constructor(address _contractOwner, address _usdcToken, address _uniswapRouter, address _uniswapFactory, uint128 _promotionFee) {
-        __ReentrancyGuard_init();
         if (_usdcToken == address(0) || _uniswapRouter == address(0) || _uniswapFactory == address(0) || _contractOwner == address(0)) revert InvalidInput();
 
         usdcToken = IERC20(_usdcToken);
@@ -360,38 +358,38 @@ contract Launchpad is ReentrancyGuardUpgradeable {
         }
     }
 
-    // function _getCampaignInfo(uint32 _campaignId) public view returns (CampaignInfo memory) {
-    //     Campaign storage c = campaigns[_campaignId];
+    function _getCampaignInfo(uint32 _campaignId) public view returns (CampaignInfo memory) {
+        Campaign storage c = campaigns[_campaignId];
 
-    //     return CampaignInfo({
-    //         id: c.id,
-    //         creator: c.creator,
-    //         targetAmount: c.targetAmount,
-    //         amountRaised: c.amountRaised,
-    //         tokensSold: c.tokensSold,
-    //         totalSupply: c.totalSupply,
-    //         tokensForSale: c.tokensForSale,
-    //         creatorAllocation: c.creatorAllocation,
-    //         liquidityAllocation: c.liquidityAllocation,
-    //         platformFeeTokens: c.platformFeeTokens,
-    //         deadline: c.deadline,
-    //         tokenAddress: address(c.token),
-    //         isActive: c.isActive,
-    //         isFundingComplete: c.isFundingComplete,
-    //         isCancelled: c.isCancelled,
-    //         name: c.name,
-    //         symbol: c.symbol,
-    //         description: c.description,
-    //         tokenFileId: c.tokenFileId,
-    //         whitepaperFileId: c.whitepaperFileId,
-    //         reserveRatio: c.reserveRatio,
-    //         uniswapPair: c.uniswapPair,
-    //         blockNumberCreated: c.blockNumberCreated,
-    //         promotionalOgPoints: c.promotionalOgPoints,
-    //         isPromoted: c.isPromoted,
-    //         isDAOEnabled: c.isDAOEnabled
-    //     });
-    // }
+        return CampaignInfo({
+            id: c.id,
+            creator: c.creator,
+            targetAmount: c.targetAmount,
+            amountRaised: c.amountRaised,
+            tokensSold: c.tokensSold,
+            totalSupply: c.totalSupply,
+            tokensForSale: c.tokensForSale,
+            creatorAllocation: c.creatorAllocation,
+            liquidityAllocation: c.liquidityAllocation,
+            platformFeeTokens: c.platformFeeTokens,
+            deadline: c.deadline,
+            tokenAddress: address(c.token),
+            isActive: c.isActive,
+            isFundingComplete: c.isFundingComplete,
+            isCancelled: c.isCancelled,
+            name: c.name,
+            symbol: c.symbol,
+            description: c.description,
+            tokenFileId: c.tokenFileId,
+            whitepaperFileId: c.whitepaperFileId,
+            reserveRatio: c.reserveRatio,
+            uniswapPair: c.uniswapPair,
+            blockNumberCreated: c.blockNumberCreated,
+            promotionalOgPoints: c.promotionalOgPoints,
+            isPromoted: c.isPromoted,
+            isDAOEnabled: c.isDAOEnabled
+        });
+    }
 
 
     receive() external payable {
