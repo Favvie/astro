@@ -67,7 +67,7 @@ const CreateCampaignDrawer = () => {
   const [whitepaper, setWhitepaper] = useState<File | null>(null);
   const [uploadingWhitepaper, setUploadingWhitepaper] = useState(false);
   const [whitepaperError, setWhitepaperError] = useState<string>("");
-  const { writeContractAsync: writeYourContractAsync } = useScaffoldWriteContract({ contractName: "LaunchpadFacet" });
+  const { writeContractAsync: writeYourContractAsync } = useScaffoldWriteContract({ contractName: "Launchpad" });
   const { fileId: hederaFileId, uploadFile, error: hederaError } = useHederaFileUpload();
   const {
     fileId: hederaWhitepaperFileId,
