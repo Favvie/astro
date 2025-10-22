@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { FileUploadInput } from "./FileUploadInput";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { Calendar, Layers } from "lucide-react";
@@ -33,6 +34,7 @@ const formSchema = z.object({
   _symbol: z.string().min(1, "Token symbol is required").max(10, "Symbol too long"),
   _description: z.string().min(10, "Description must be at least 10 characters").max(500, "Description too long"),
   _iconFileid: z.string().min(1, "Token image is required"),
+  _whitepaperFileid: z.string().optional(),
   _targetFunding: z
     .string()
     .min(1, "Target funding is required")
@@ -62,8 +64,16 @@ const CreateCampaignDrawer = () => {
   const [tokenImage, setTokenImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [whitepaper, setWhitepaper] = useState<File | null>(null);
+  const [uploadingWhitepaper, setUploadingWhitepaper] = useState(false);
+  const [whitepaperError, setWhitepaperError] = useState<string>("");
   const { writeContractAsync: writeYourContractAsync } = useScaffoldWriteContract({ contractName: "LaunchpadFacet" });
   const { fileId: hederaFileId, uploadFile, error: hederaError } = useHederaFileUpload();
+  const {
+    fileId: hederaWhitepaperFileId,
+    uploadFile: uploadWhitepaperFile,
+    error: hederaWhitepaperError,
+  } = useHederaFileUpload();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -72,6 +82,7 @@ const CreateCampaignDrawer = () => {
       _symbol: "",
       _description: "",
       _iconFileid: "",
+      _whitepaperFileid: "",
       _targetFunding: "",
       _totalSupply: "",
       _reserveRatio: "10",
@@ -102,6 +113,7 @@ const CreateCampaignDrawer = () => {
             value._symbol,
             value._description,
             value._iconFileid,
+            value._whitepaperFileid,
             targetFunding,
             totalSupply,
             reserveRatio,
@@ -128,8 +140,7 @@ const CreateCampaignDrawer = () => {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleImageUpload = async (file: File | null) => {
     if (file) {
       setTokenImage(file);
       const reader = new FileReader();
@@ -159,6 +170,37 @@ const CreateCampaignDrawer = () => {
         });
       } finally {
         setUploadingImage(false);
+      }
+    }
+  };
+
+  const handleWhitepaperUpload = async (file: File | null) => {
+    if (file) {
+      setWhitepaper(file);
+      setWhitepaperError("");
+
+      // Upload to Hedera
+      setUploadingWhitepaper(true);
+      const uploadToastId = toast.loading("Uploading whitepaper to Hedera...", {
+        position: "top-right",
+      });
+
+      try {
+        const fileId = await uploadWhitepaperFile(file);
+        form.setValue("_whitepaperFileid", fileId);
+        toast.success(`Whitepaper uploaded successfully! File ID: ${fileId}`, {
+          id: uploadToastId,
+          position: "top-right",
+        });
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to upload whitepaper";
+        setWhitepaperError(errorMessage);
+        toast.error(errorMessage, {
+          id: uploadToastId,
+          position: "top-right",
+        });
+      } finally {
+        setUploadingWhitepaper(false);
       }
     }
   };
@@ -247,44 +289,79 @@ const CreateCampaignDrawer = () => {
                     )}
                   />
 
-                  <FormItem>
-                    <FormLabel className="text-white font-medium">Token Image</FormLabel>
-                    <FormControl>
-                      <div className="space-y-3">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          disabled={uploadingImage}
-                          className="block w-full text-sm text-gray-400
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-md file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-[#8daa98] file:text-white
-                            hover:file:bg-[#7a9985]
-                            cursor-pointer
-                            disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-                        {uploadingImage && <span className="text-sm text-[#8daa98]">Uploading to Hedera...</span>}
-                        {hederaError && <span className="text-sm text-red-500">Error: {hederaError}</span>}
-                        {imagePreview && hederaFileId && (
-                          <div className="flex items-center gap-3">
-                            <Image
-                              src={imagePreview}
-                              alt="Token preview"
-                              width={64}
-                              height={64}
-                              className="rounded-lg object-cover border border-gray-600"
-                            />
-                            <div className="flex flex-col gap-1">
-                              <span className="text-sm text-gray-400">{tokenImage?.name}</span>
-                              <span className="text-xs text-[#8daa98]">FileID: {hederaFileId}</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormItem>
+                      <FormLabel className="text-white font-medium">Token Image</FormLabel>
+                      <FormControl>
+                        <div className="space-y-3">
+                          <FileUploadInput
+                            files={tokenImage ? [tokenImage] : []}
+                            onChange={handleImageUpload}
+                            acceptTypes="image/*"
+                            uploadStatus={uploadingImage ? "uploading" : hederaFileId ? "success" : "idle"}
+                            disabled={uploadingImage}
+                            onRemove={() => {
+                              setTokenImage(null);
+                              setImagePreview("");
+                              form.setValue("_iconFileid", "");
+                            }}
+                          />
+                          {hederaError && <span className="text-sm text-red-500">Error: {hederaError}</span>}
+                          {imagePreview && hederaFileId && (
+                            <div className="flex items-center gap-3">
+                              <Image
+                                src={imagePreview}
+                                alt="Token preview"
+                                width={64}
+                                height={64}
+                                className="rounded-lg object-cover border border-gray-600"
+                              />
+                              <div className="flex flex-col gap-1">
+                                <span className="text-sm text-gray-400">{tokenImage?.name}</span>
+                                <span className="text-xs text-[#8daa98]">FileID: {hederaFileId}</span>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </FormControl>
-                  </FormItem>
+                          )}
+                        </div>
+                      </FormControl>
+                    </FormItem>
+
+                    <FormItem>
+                      <FormLabel className="text-white font-medium">Whitepaper (Optional)</FormLabel>
+                      <FormControl>
+                        <div className="space-y-3">
+                          <FileUploadInput
+                            files={whitepaper ? [whitepaper] : []}
+                            onChange={handleWhitepaperUpload}
+                            acceptTypes=".pdf,.txt"
+                            maxSizeInMB={1}
+                            uploadStatus={
+                              uploadingWhitepaper ? "uploading" : hederaWhitepaperFileId ? "success" : "idle"
+                            }
+                            disabled={uploadingWhitepaper}
+                            onSizeError={setWhitepaperError}
+                            onRemove={() => {
+                              setWhitepaper(null);
+                              setWhitepaperError("");
+                              form.setValue("_whitepaperFileid", "");
+                            }}
+                          />
+                          {whitepaperError && <span className="text-sm text-red-500">Error: {whitepaperError}</span>}
+                          {hederaWhitepaperError && (
+                            <span className="text-sm text-red-500">Error: {hederaWhitepaperError}</span>
+                          )}
+                          {whitepaper && hederaWhitepaperFileId && (
+                            <div className="flex items-center gap-3">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-sm text-gray-400">{whitepaper.name}</span>
+                                <span className="text-xs text-[#8daa98]">FileID: {hederaWhitepaperFileId}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField

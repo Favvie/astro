@@ -27,9 +27,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "File must be an image" }, { status: 400 });
+    // Validate file type - allow images, PDFs, and text files
+    const allowedTypes = ["image/", "application/pdf", "text/plain"];
+    const isAllowedType = allowedTypes.some(type => {
+      if (type.endsWith("/")) {
+        return file.type.startsWith(type);
+      }
+      return file.type === type;
+    });
+
+    if (!isAllowedType) {
+      return NextResponse.json({ error: "File must be an image (JPG, PNG, etc.), PDF, or text file" }, { status: 400 });
     }
 
     // Environment variables (store these securely)
