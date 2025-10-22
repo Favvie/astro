@@ -20,13 +20,13 @@ export function DashboardContent() {
   const { address: connectedAddress } = useAccount();
 
   const { data: rawusersParticipatedCampaigns } = useScaffoldReadContract({
-    contractName: "LaunchpadChild",
+    contractName: "LaunchpadV2",
     functionName: "getUserParticipatedCampaignsWithInvestmentCheck",
     args: [connectedAddress],
   });
 
   const { data: rawCampaignsByCreator } = useScaffoldReadContract({
-    contractName: "LaunchpadChild",
+    contractName: "LaunchpadV2",
     functionName: "getCampaignsByCreator",
     args: [connectedAddress],
   });
@@ -94,7 +94,7 @@ export function DashboardContent() {
   }, [rawusersParticipatedCampaigns]);
 
   const { data: usertotalInvestment } = useScaffoldReadContract({
-    contractName: "LaunchpadChild",
+    contractName: "LaunchpadV2",
     functionName: "getUserTotalInvestment",
     args: [connectedAddress],
   });
@@ -118,7 +118,7 @@ export function DashboardContent() {
   }, [usertotalInvestment]);
 
   const { data: userOgPoints } = useScaffoldReadContract({
-    contractName: "LaunchpadFacet",
+    contractName: "Launchpad",
     functionName: "ogPoints",
     args: [connectedAddress],
   });

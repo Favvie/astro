@@ -127,10 +127,10 @@ export const useScaffoldEventHistory = <
 
   const fromBlockValue =
     fromBlock !== undefined
-      ? fromBlock
+      ? (fromBlock as bigint)
       : BigInt(
-          deployedContractData && "deployedOnBlock" in deployedContractData
-            ? deployedContractData.deployedOnBlock || 0
+          deployedContractData && "deployedOnBlock" in deployedContractData && deployedContractData.deployedOnBlock
+            ? (deployedContractData.deployedOnBlock as number)
             : 0,
         );
 
