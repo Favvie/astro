@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { Calendar, Layers } from "lucide-react";
@@ -25,11 +26,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "~~/components/ui/popove
 import { Switch } from "~~/components/ui/switch";
 import { Textarea } from "~~/components/ui/textarea";
 import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useHederaFileUpload } from "~~/hooks/useHederaFileUpload";
 
 const formSchema = z.object({
   _name: z.string().min(1, "Campaign name is required").max(100, "Name too long"),
   _symbol: z.string().min(1, "Token symbol is required").max(10, "Symbol too long"),
   _description: z.string().min(10, "Description must be at least 10 characters").max(500, "Description too long"),
+  _iconFileid: z.string().min(1, "Token image is required"),
   _targetFunding: z
     .string()
     .min(1, "Target funding is required")
@@ -56,7 +59,11 @@ type FormData = z.infer<typeof formSchema>;
 const CreateCampaignDrawer = () => {
   const [isAdvanced, setIsAdvanced] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [tokenImage, setTokenImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { writeContractAsync: writeYourContractAsync } = useScaffoldWriteContract({ contractName: "LaunchpadFacet" });
+  const { fileId: hederaFileId, uploadFile, error: hederaError } = useHederaFileUpload();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -64,6 +71,7 @@ const CreateCampaignDrawer = () => {
       _name: "",
       _symbol: "",
       _description: "",
+      _iconFileid: "",
       _targetFunding: "",
       _totalSupply: "",
       _reserveRatio: "10",
@@ -93,6 +101,7 @@ const CreateCampaignDrawer = () => {
             value._name,
             value._symbol,
             value._description,
+            value._iconFileid,
             targetFunding,
             totalSupply,
             reserveRatio,
@@ -116,6 +125,41 @@ const CreateCampaignDrawer = () => {
         id: toastId,
         position: "top-right",
       });
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setTokenImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Hedera
+      setUploadingImage(true);
+      const uploadToastId = toast.loading("Uploading image to Hedera...", {
+        position: "top-right",
+      });
+
+      try {
+        const fileId = await uploadFile(file);
+        form.setValue("_iconFileid", fileId);
+        toast.success(`Image uploaded successfully! File ID: ${fileId}`, {
+          id: uploadToastId,
+          position: "top-right",
+        });
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to upload image";
+        toast.error(errorMessage, {
+          id: uploadToastId,
+          position: "top-right",
+        });
+      } finally {
+        setUploadingImage(false);
+      }
     }
   };
 
@@ -202,6 +246,45 @@ const CreateCampaignDrawer = () => {
                       </FormItem>
                     )}
                   />
+
+                  <FormItem>
+                    <FormLabel className="text-white font-medium">Token Image</FormLabel>
+                    <FormControl>
+                      <div className="space-y-3">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={uploadingImage}
+                          className="block w-full text-sm text-gray-400
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-md file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-[#8daa98] file:text-white
+                            hover:file:bg-[#7a9985]
+                            cursor-pointer
+                            disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                        {uploadingImage && <span className="text-sm text-[#8daa98]">Uploading to Hedera...</span>}
+                        {hederaError && <span className="text-sm text-red-500">Error: {hederaError}</span>}
+                        {imagePreview && hederaFileId && (
+                          <div className="flex items-center gap-3">
+                            <Image
+                              src={imagePreview}
+                              alt="Token preview"
+                              width={64}
+                              height={64}
+                              className="rounded-lg object-cover border border-gray-600"
+                            />
+                            <div className="flex flex-col gap-1">
+                              <span className="text-sm text-gray-400">{tokenImage?.name}</span>
+                              <span className="text-xs text-[#8daa98]">FileID: {hederaFileId}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                  </FormItem>
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -316,8 +399,12 @@ const CreateCampaignDrawer = () => {
                 )}
 
                 <DrawerFooter>
-                  <Button type="submit" className="bg-[#8daa98] hover:bg-[#7a9985] text-white">
-                    Create Campaign
+                  <Button
+                    type="submit"
+                    disabled={uploadingImage}
+                    className="bg-[#8daa98] hover:bg-[#7a9985] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {uploadingImage ? "Uploading Image..." : "Create Campaign"}
                   </Button>
                   <DrawerClose asChild>
                     <Button

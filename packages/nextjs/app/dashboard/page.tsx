@@ -1,5 +1,14 @@
-import { DashboardContent } from "./_components/dashboard-content";
+"use client";
 
-export default function DashboardPage() {
-  return <DashboardContent />;
-}
+import { DashboardContent } from "./_components/dashboard-content";
+import type { NextPage } from "next";
+
+const Dashboard: NextPage = () => {
+  return (
+    <>
+      <DashboardContent />
+    </>
+  );
+};
+
+export default Dashboard;

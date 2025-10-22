@@ -21,7 +21,7 @@ export function AppHeader({ navItems, onNavClick }: AppHeaderProps) {
         {/* Left side - Logo and Navigation */}
         <div className="flex items-center space-x-5 sm:space-x-10">
           <Link href="/">
-            <Image src="/spacebums.png" alt="Logo" width={100} height={100} className="w-16 sm:w-28" />
+            <Image src="/logo.svg" alt="Logo" width={100} height={100} className="w-16 sm:w-28" />
           </Link>
 
           <nav className="flex items-center space-x-4 sm:space-x-6">
