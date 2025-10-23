@@ -15,11 +15,11 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navItems: NavItem[] = [
     {
       label: "Manage",
-      href: "/app",
+      href: "/dashboard",
     },
     {
       label: "Explore",
-      href: "/app/explore",
+      href: "/dashboard/explore",
     },
   ];
 

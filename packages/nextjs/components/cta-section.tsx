@@ -112,7 +112,7 @@ export function CTASection() {
           </p>
         </div>
         <Link
-          href={"/app"}
+          href={"/dashboard"}
           className="px-10 py-4 rounded-full bg-white text-black font-normal text-md transition-all duration-300 hover:bg-white/90 cursor-pointer h-12 flex items-center z-10"
         >
           Get Started

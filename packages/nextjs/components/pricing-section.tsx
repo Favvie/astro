@@ -19,7 +19,7 @@ export function PricingSection() {
         "Lifetime Trading Ecosystem",
       ],
       buttonText: "Get Started 🧧",
-      urlRouteTo: "/app",
+      urlRouteTo: "/dashboard",
       buttonClass:
         "bg-zinc-300 shadow-[0px_1px_1px_-0.5px_rgba(16,24,40,0.20)] outline outline-0.5 outline-[#1e29391f] outline-offset-[-0.5px] text-gray-800 text-shadow-[0px_1px_1px_rgba(16,24,40,0.08)] hover:bg-zinc-400",
     },
@@ -38,7 +38,7 @@ export function PricingSection() {
         "Portfolio Overview",
       ],
       buttonText: "Explore 🚀",
-      urlRouteTo: "/app/explore",
+      urlRouteTo: "/dashboard/explore",
       buttonClass:
         "bg-zinc-300 shadow-[0px_1px_1px_-0.5px_rgba(16,24,40,0.20)] outline outline-0.5 outline-[#1e29391f] outline-offset-[-0.5px] text-gray-800 text-shadow-[0px_1px_1px_rgba(16,24,40,0.08)] hover:bg-zinc-400",
     },

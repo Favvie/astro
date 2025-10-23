@@ -374,7 +374,7 @@ export function DashboardContent() {
 
                     <div>
                       <Link
-                        href="/app/explore"
+                        href="/dashboard/explore"
                         className="text-[#8daa98] hover:text-white flex items-center justify-center bg-[#25333b] h-10 w-40 rounded-lg font-semibold"
                       >
                         Explore
