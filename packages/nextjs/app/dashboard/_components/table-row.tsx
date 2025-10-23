@@ -15,7 +15,7 @@ const TableRow: React.FC<TableRowProps> = ({ campaign }) => {
   return (
     <>
       <Link
-        href={`/app/campaign/${campaign.id}`}
+        href={`/dashboard/campaign/${campaign.id}`}
         className="hidden sm:grid grid-cols-5 gap-4 px-4 py-5 items-center hover:bg-gray-800/50 transition-colors text-sm bg-[#19242a] rounded-xl"
       >
         <div className="flex items-center space-x-3">
@@ -60,7 +60,7 @@ const TableRow: React.FC<TableRowProps> = ({ campaign }) => {
       </Link>
 
       <Link
-        href={`/app/campaign/${campaign.id}`}
+        href={`/dashboard/campaign/${campaign.id}`}
         // On large screens, `w-full` ensures the row takes up all available width.
         // `flex flex-nowrap` keeps all items in a single row.
         // `overflow-x-auto` enables horizontal scrolling when the combined minimum width of children exceeds the parent's width.

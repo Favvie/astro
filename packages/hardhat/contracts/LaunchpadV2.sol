@@ -92,7 +92,6 @@ interface IParentContract {
 }
 
 contract LaunchpadV2 is ReentrancyGuard {
-
     using SafeERC20 for IERC20;
 
     IParentContract parentContract;
@@ -119,17 +118,15 @@ contract LaunchpadV2 is ReentrancyGuard {
     error Unauthorized();
     error InvalidInput();
 
-    event CampaignCancelled(
-        uint256 indexed campaignId,
-        address indexed creator
-    );
+    enum TradeType {buy, sell}
 
-    event RefundClaimed(
-        uint256 indexed campaignId,
-        address indexed investor,
-        uint256 amount
-    );
+    event CampaignCancelled(uint256 indexed campaignId, address indexed creator);
 
+    event RefundClaimed(uint256 indexed campaignId, address indexed investor, uint256 amount);
+
+    event SwapEvent(uint256 indexed CampaignId, uint256 amount, address user, TradeType tradeType, address token);
+
+    event LiquidityEvent(uint256 indexed CampaignId, uint256 tokenAmount, uint256 usdcAmount, address user, TradeType tradeType, address token);
 
     constructor(address _parentContract, address _usdcToken, address _uniswapRouter, address _uniswapFactory) {
         parentContract = IParentContract(_parentContract);
@@ -138,13 +135,13 @@ contract LaunchpadV2 is ReentrancyGuard {
         uniswapFactory = IUniswapV2Factory(_uniswapFactory);
     }
 
-   /**
+    /**
      * @dev Swap campaign token for USDC using Uniswap pool
      * @param _campaignId ID of the campaign
      * @param _tokenAmount Amount of tokens to swap
      * @param _minUsdcOut Minimum USDC expected (for slippage protection)
      * @param _deadline Transaction deadline
-    */
+     */
     function swapTokenForUsdc(
         uint32 _campaignId,
         uint256 _tokenAmount,
@@ -152,8 +149,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         uint256 _deadline
     ) external nonReentrant {
         uint256 campaignCount = IParentContract(parentContract).campaignCount();
-        if (_campaignId == 0 || _campaignId > campaignCount)
-            revert CampaignDoesNotExist();
+        if (_campaignId == 0 || _campaignId > campaignCount) revert CampaignDoesNotExist();
         if (_tokenAmount == 0) revert ZeroValueNotAllowed();
         if (_deadline <= block.timestamp) revert DeadlineExpired();
 
@@ -163,7 +159,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         if (campaign.uniswapPair == address(0)) revert InvalidParameters();
 
         address token = campaign.tokenAddress;
-        
+
         // Check user has enough tokens
         if (IERC20(token).balanceOf(msg.sender) < _tokenAmount) revert NotEnoughTokens();
 
@@ -175,19 +171,22 @@ contract LaunchpadV2 is ReentrancyGuard {
 
         // Set up swap path: token -> USDC (CORRECTED)
         address[] memory path = new address[](2);
-        path[0] = address(token);  // FROM: campaign token
-        path[1] = address(usdcToken);  // TO: USDC
+        path[0] = address(token); // FROM: campaign token
+        path[1] = address(usdcToken); // TO: USDC
 
         // Perform swap: sell exact tokens for minimum USDC
         uniswapRouter.swapExactTokensForTokens(
-            _tokenAmount,    // exact amount of tokens to sell
-            _minUsdcOut,     // minimum USDC to receive
-            path,            // token -> USDC path
-            msg.sender,      // send USDC directly to user
-            _deadline        // deadline
+            _tokenAmount, // exact amount of tokens to sell
+            _minUsdcOut, // minimum USDC to receive
+            path, // token -> USDC path
+            msg.sender, // send USDC directly to user
+            _deadline // deadline
         );
-    }
 
+        // TradeType tradeType = ;
+
+        emit SwapEvent(_campaignId, _tokenAmount, msg.sender, TradeType.sell, token);
+    }
 
     function swapUsdcForToken(
         uint32 _campaignId,
@@ -200,7 +199,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         if (_usdcAmount == 0) revert ZeroValueNotAllowed();
         if (_deadline <= block.timestamp) revert DeadlineExpired();
 
-        CampaignInfo memory campaign =  IParentContract(parentContract)._getCampaignInfo(_campaignId);
+        CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
 
         if (!campaign.isFundingComplete) revert FundingNotMet();
         if (campaign.uniswapPair == address(0)) revert InvalidParameters();
@@ -223,13 +222,9 @@ contract LaunchpadV2 is ReentrancyGuard {
         path[1] = address(token);
 
         // Perform swap: sell exact USDC for minimum token
-        uniswapRouter.swapExactTokensForTokens(
-            _usdcAmount,
-            _minTokenOut,
-            path,
-            msg.sender,
-            _deadline
-        );
+        uniswapRouter.swapExactTokensForTokens(_usdcAmount, _minTokenOut, path, msg.sender, _deadline);
+
+        emit SwapEvent(_campaignId, _usdcAmount, msg.sender, TradeType.buy, token);
     }
 
     /**
@@ -254,7 +249,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         if (_tokenAmount == 0 || _usdcAmount == 0) revert ZeroValueNotAllowed();
         if (_deadline <= block.timestamp) revert DeadlineExpired();
 
-        CampaignInfo memory campaign =  IParentContract(parentContract)._getCampaignInfo(_campaignId);
+        CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
 
         if (!campaign.isFundingComplete) revert FundingNotMet();
         if (campaign.uniswapPair == address(0)) revert InvalidParameters();
@@ -278,16 +273,19 @@ contract LaunchpadV2 is ReentrancyGuard {
         require(usdcToken.approve(address(uniswapRouter), _usdcAmount), "USDC approve failed");
 
         // Add liquidity
-        try uniswapRouter.addLiquidity(
-            address(token),
-            address(usdcToken),
-            _tokenAmount,
-            _usdcAmount,
-            _minTokenLiquidity,
-            _minUsdcLiquidity,
-            msg.sender, // LP tokens go to user
-            _deadline
-        ) {
+        try
+            uniswapRouter.addLiquidity(
+                address(token),
+                address(usdcToken),
+                _tokenAmount,
+                _usdcAmount,
+                _minTokenLiquidity,
+                _minUsdcLiquidity,
+                msg.sender, // LP tokens go to user
+                _deadline
+            )
+        {
+            emit LiquidityEvent(_campaignId, _tokenAmount, _usdcAmount, msg.sender, TradeType.buy, token);
             // Success - liquidity added
         } catch {
             // If failed, return tokens to user
@@ -297,14 +295,12 @@ contract LaunchpadV2 is ReentrancyGuard {
         }
     }
 
-
-
     function getUserParticipatedCampaignsWithInvestmentCheck(
         address _user
     ) external view returns (CampaignInfo[] memory) {
         uint32 totalCampaigns = IParentContract(parentContract).campaignCount();
         IParentContract extendedParent = IParentContract(address(parentContract));
-        
+
         // First pass: count participated campaigns
         uint32 participatedCount = 0;
         for (uint32 i = 1; i <= totalCampaigns; i++) {
@@ -321,7 +317,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         // Second pass: populate array
         CampaignInfo[] memory participatedCampaigns = new CampaignInfo[](participatedCount);
         uint32 index = 0;
-        
+
         for (uint32 i = 1; i <= totalCampaigns; i++) {
             try extendedParent.getUserInvestment(i, _user) returns (uint128 investment) {
                 if (investment > 0) {
@@ -336,16 +332,13 @@ contract LaunchpadV2 is ReentrancyGuard {
         return participatedCampaigns;
     }
 
-
     /**
      * @dev Get campaigns created by a user by iterating through all campaigns
      * This is less gas efficient but works without modifying the parent contract
      */
-    function getCampaignsByCreator(
-        address _creator
-    ) external view returns (CampaignInfo[] memory) {
+    function getCampaignsByCreator(address _creator) external view returns (CampaignInfo[] memory) {
         uint32 totalCampaigns = IParentContract(parentContract).campaignCount();
-        
+
         // First pass: count campaigns by this creator
         uint32 creatorCampaignCount = 0;
         for (uint32 i = 1; i <= totalCampaigns; i++) {
@@ -358,7 +351,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         // Second pass: populate the array
         CampaignInfo[] memory campaignsLocal = new CampaignInfo[](creatorCampaignCount);
         uint32 index = 0;
-        
+
         for (uint32 i = 1; i <= totalCampaigns; i++) {
             CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(i);
             if (campaign.creator == _creator) {
@@ -370,30 +363,32 @@ contract LaunchpadV2 is ReentrancyGuard {
         return campaignsLocal;
     }
 
-
     /**
      * @dev Get summary statistics
      * @return totalCampaigns Total number of campaigns
-     * @return activeCampaigns Number of active campaigns  
+     * @return activeCampaigns Number of active campaigns
      * @return completedCampaigns Number of completed campaigns
      * @return cancelledCampaigns Number of cancelled campaigns
      * @return expiredCampaigns Number of expired campaigns
      * @return totalFundingRaised Total USDC raised across all campaigns
      */
-    function getSummaryStats() external view returns (
-        uint256 totalCampaigns,
-        uint256 activeCampaigns,
-        uint256 completedCampaigns, 
-        uint256 cancelledCampaigns,
-        uint256 expiredCampaigns,
-        uint256 totalFundingRaised
-    ) {
-    
+    function getSummaryStats()
+        external
+        view
+        returns (
+            uint256 totalCampaigns,
+            uint256 activeCampaigns,
+            uint256 completedCampaigns,
+            uint256 cancelledCampaigns,
+            uint256 expiredCampaigns,
+            uint256 totalFundingRaised
+        )
+    {
         uint256 campaignCount = IParentContract(parentContract).campaignCount();
         for (uint32 i = 1; i <= campaignCount; i++) {
             CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(i);
             totalFundingRaised += campaign.amountRaised;
-            
+
             if (campaign.isCancelled) {
                 cancelledCampaigns++;
             } else if (campaign.isFundingComplete) {
@@ -406,7 +401,7 @@ contract LaunchpadV2 is ReentrancyGuard {
 
             totalCampaigns++;
         }
-        
+
         return (
             totalCampaigns,
             activeCampaigns,
@@ -420,21 +415,13 @@ contract LaunchpadV2 is ReentrancyGuard {
     /**
      * @dev Preview tokens received for USDC amount
      */
-    function previewPurchase(
-        uint32 _campaignId,
-        uint256 _usdcAmount
-    ) external view returns (uint256 tokensReceived) {
-
+    function previewPurchase(uint32 _campaignId, uint256 _usdcAmount) external view returns (uint256 tokensReceived) {
         uint256 campaignCount = IParentContract(parentContract).campaignCount();
 
         if (_campaignId == 0 || _campaignId > campaignCount) revert Launchpad.InvalidInput();
         CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
 
-        if (
-            !campaign.isActive ||
-            campaign.isFundingComplete ||
-            campaign.isCancelled
-        ) {
+        if (!campaign.isActive || campaign.isFundingComplete || campaign.isCancelled) {
             return 0;
         }
 
@@ -447,8 +434,7 @@ contract LaunchpadV2 is ReentrancyGuard {
             );
     }
 
-
-      /**
+    /**
      * @dev Get all campaigns with pagination
      * @param _offset Starting index for pagination (0-based)
      * @param _limit Number of campaigns to return (max 50)
@@ -459,15 +445,7 @@ contract LaunchpadV2 is ReentrancyGuard {
     function getAllCampaignsPaginated(
         uint32 _offset,
         uint32 _limit
-    )
-        external
-        view
-        returns (
-            CampaignInfo[] memory campaignsLocal,
-            uint32 total,
-            bool hasMore
-        )
-    {
+    ) external view returns (CampaignInfo[] memory campaignsLocal, uint32 total, bool hasMore) {
         if (_limit == 0 || _limit > 50) revert InvalidInput();
 
         uint32 campaignCount = parentContract.campaignCount();
@@ -490,8 +468,7 @@ contract LaunchpadV2 is ReentrancyGuard {
         hasMore = _offset + actualLimit < campaignCount;
 
         return (campaignsLocal, total, hasMore);
-    }    
-
+    }
 
     /**
      * @dev Get expected swap output for debugging
@@ -500,12 +477,11 @@ contract LaunchpadV2 is ReentrancyGuard {
      * @return expectedUsdcOut Expected USDC output
      */
     function getSwapAmountOut(
-        uint32 _campaignId, 
+        uint32 _campaignId,
         uint256 _tokenAmountIn
     ) external view returns (uint256 expectedUsdcOut) {
         CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
 
-        
         if (campaign.uniswapPair == address(0) || _tokenAmountIn == 0) {
             return 0;
         }
@@ -529,11 +505,11 @@ contract LaunchpadV2 is ReentrancyGuard {
      * @return expectedTokenOut Expected token output
      */
     function getTokenAmountOut(
-        uint32 _campaignId, 
+        uint32 _campaignId,
         uint256 _usdcAmountIn
     ) external view returns (uint256 expectedTokenOut) {
         CampaignInfo memory campaign = IParentContract(parentContract)._getCampaignInfo(_campaignId);
-        
+
         if (campaign.uniswapPair == address(0) || _usdcAmountIn == 0) {
             return 0;
         }
@@ -550,23 +526,20 @@ contract LaunchpadV2 is ReentrancyGuard {
         }
     }
 
-
     /**
      * @dev Get user's total investment across all campaigns
      * @param _user The user's address
      * @return totalInvestment Total USDC amount invested by the user
      * @return campaignsParticipated Number of campaigns the user participated in
      */
-    function getUserTotalInvestment(address _user) 
-        external 
-        view 
-        returns (uint256 totalInvestment, uint32 campaignsParticipated) 
-    {
+    function getUserTotalInvestment(
+        address _user
+    ) external view returns (uint256 totalInvestment, uint32 campaignsParticipated) {
         if (_user == address(0)) revert AddressZeroDetected();
-        
+
         uint32 totalCampaigns = IParentContract(parentContract).campaignCount();
         IParentContract extendedParent = IParentContract(address(parentContract));
-        
+
         for (uint32 i = 1; i <= totalCampaigns; i++) {
             try extendedParent.getUserInvestment(i, _user) returns (uint128 investment) {
                 if (investment > 0) {
@@ -578,8 +551,7 @@ contract LaunchpadV2 is ReentrancyGuard {
                 continue;
             }
         }
-        
+
         return (totalInvestment, campaignsParticipated);
     }
-
 }
