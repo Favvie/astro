@@ -50,6 +50,8 @@ contract CampaignDAO is ReentrancyGuard {
     /// @notice Counter for proposal IDs
     uint256 public proposalCount;
 
+    string public hederaTopicId;
+
     // ============================================
     // ENUMS
     // ============================================
@@ -83,9 +85,6 @@ contract CampaignDAO is ReentrancyGuard {
         uint256 againstVotes;
         uint256 abstainVotes;
         bool executed;
-        address target;         // Target contract for execution
-        uint256 value;          // ETH/USDC value to send
-        bytes callData;         // Function call data
     }
 
     // ============================================
@@ -163,6 +162,7 @@ contract CampaignDAO is ReentrancyGuard {
     constructor(
         address _campaignToken,
         uint256 _campaignId,
+        string memory _hederaTopicId,
         address _campaignCreator,
         uint256 _proposalThreshold,
         uint256 _votingPeriod,
@@ -181,6 +181,7 @@ contract CampaignDAO is ReentrancyGuard {
         votingPeriod = _votingPeriod;
         quorumPercentage = _quorumPercentage;
         majorityPercentage = _majorityPercentage;
+        hederaTopicId = _hederaTopicId;
     }
 
     // ============================================
@@ -191,17 +192,11 @@ contract CampaignDAO is ReentrancyGuard {
      * @notice Create a new proposal
      * @param _title Short title of the proposal
      * @param _description Detailed description of the proposal
-     * @param _target Target contract address (use address(0) for treasury transfers)
-     * @param _value ETH/USDC amount to send
-     * @param _callData Encoded function call data
      * @return proposalId The ID of the created proposal
      */
     function createProposal(
         string memory _title,
-        string memory _description,
-        address _target,
-        uint256 _value,
-        bytes memory _callData
+        string memory _description
     ) external returns (uint256) {
         // Check if proposer has minimum required tokens
         require(
@@ -231,10 +226,7 @@ contract CampaignDAO is ReentrancyGuard {
             forVotes: 0,
             againstVotes: 0,
             abstainVotes: 0,
-            executed: false,
-            target: _target,
-            value: _value,
-            callData: _callData
+            executed: false
         });
 
         emit ProposalCreated(
@@ -305,20 +297,8 @@ contract CampaignDAO is ReentrancyGuard {
         ProposalState state = getProposalState(_proposalId);
         require(state == ProposalState.Succeeded, "Proposal did not pass");
 
-        // Mark as executed before external call (checks-effects-interactions)
+        // Mark as executed
         proposal.executed = true;
-
-        // Execute the proposal
-        if (proposal.target != address(0)) {
-            (bool success, ) = proposal.target.call{value: proposal.value}(
-                proposal.callData
-            );
-            require(success, "Proposal execution failed");
-        } else if (proposal.value > 0) {
-            // Simple ETH transfer if no target specified
-            (bool success, ) = proposal.proposer.call{value: proposal.value}("");
-            require(success, "ETH transfer failed");
-        }
 
         emit ProposalExecuted(_proposalId);
     }

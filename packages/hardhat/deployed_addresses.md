@@ -4,6 +4,6 @@ Usdc Contract deployed at: 0x82254d0f8C5091E79a5433f87ca7354a88FB1292
 Launchpad Contract deployed at: 0xCEadd06AE587CaD6eF922F91F18f26EB42180Bbb
 LaunchpadV2 Contract deployed at: 0x5F9A7Db4c568421a65E4cb6D1ef1457546156531
 
-CampaignDAOFactory Contract deployed at: 0x0DcA4343Fde8236276Fd1305DcEEAa13D56f9E35
+CampaignDAOFactory Contract deployed at: 0xb93719930F8f7a81ceF2B7D2B0717A5189993619
 
 Faucet Contract deployed at: 0x4964FE2EACAB0202Ae0953d80e33c09d0CA4DbeD

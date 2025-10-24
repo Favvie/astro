@@ -31,6 +31,8 @@ contract CampaignDAOFactory {
     /// @notice Mapping of token address to DAO address
     mapping(address => address) public tokenToDAO;
 
+    mapping(uint256 => string) public hederaTopicIds; // campaignId => hederaTopicId
+
     /// @notice Array of all DAO addresses
     address[] public allDAOs;
 
@@ -74,6 +76,7 @@ contract CampaignDAOFactory {
     function createCampaignDAO(
         address _campaignToken,
         uint256 _campaignId,
+        string memory _hederaTopicId,
         address _campaignCreator,
         bool _isDAOEnabled
     ) external returns (address) {
@@ -82,6 +85,7 @@ contract CampaignDAOFactory {
         return _createCampaignDAO(
             _campaignToken,
             _campaignId,
+            _hederaTopicId,
             _campaignCreator,
             defaultParameters.proposalThreshold,
             defaultParameters.votingPeriod,
@@ -105,6 +109,7 @@ contract CampaignDAOFactory {
     function createCampaignDAOWithCustomParams(
         address _campaignToken,
         uint256 _campaignId,
+        string memory _hederaTopicId,
         address _campaignCreator,
         bool _isDAOEnabled,
         uint256 _proposalThreshold,
@@ -117,6 +122,7 @@ contract CampaignDAOFactory {
         return _createCampaignDAO(
             _campaignToken,
             _campaignId,
+            _hederaTopicId,
             _campaignCreator,
             _proposalThreshold,
             _votingPeriod,
@@ -131,6 +137,7 @@ contract CampaignDAOFactory {
     function _createCampaignDAO(
         address _campaignToken,
         uint256 _campaignId,
+        string memory _hederaTopicId,
         address _campaignCreator,
         uint256 _proposalThreshold,
         uint256 _votingPeriod,
@@ -145,6 +152,7 @@ contract CampaignDAOFactory {
         CampaignDAO dao = new CampaignDAO(
             _campaignToken,
             _campaignId,
+            _hederaTopicId,
             _campaignCreator,
             _proposalThreshold,
             _votingPeriod,
@@ -158,6 +166,8 @@ contract CampaignDAOFactory {
         campaignDAOs[_campaignId] = daoAddress;
         tokenToDAO[_campaignToken] = daoAddress;
         allDAOs.push(daoAddress);
+        
+        hederaTopicIds[_campaignId] = _hederaTopicId;
 
         emit CampaignDAOCreated(_campaignId, _campaignToken, daoAddress, _campaignCreator);
 
