@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {LaunchpadV2, CampaignInfo, IParentContract} from "./LaunchpadV2.sol";
-import {TokenFacet} from "./Token.sol";
+import {LaunchpadV2, CampaignInfo, IParentContract} from "../LaunchpadV2.sol";
+import {TokenFacet} from "../Token.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 

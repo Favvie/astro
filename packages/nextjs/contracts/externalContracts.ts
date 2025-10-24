@@ -2532,6 +2532,360 @@ const externalContracts = {
         },
       ],
     },
+    CampaignDAOFactory: {
+      address: "0xb93719930F8f7a81ceF2B7D2B0717A5189993619",
+      abi: [
+        {
+          inputs: [],
+          stateMutability: "nonpayable",
+          type: "constructor",
+        },
+        {
+          anonymous: false,
+          inputs: [
+            {
+              indexed: true,
+              internalType: "uint256",
+              name: "campaignId",
+              type: "uint256",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "campaignToken",
+              type: "address",
+            },
+            {
+              indexed: true,
+              internalType: "address",
+              name: "daoAddress",
+              type: "address",
+            },
+            {
+              indexed: false,
+              internalType: "address",
+              name: "creator",
+              type: "address",
+            },
+          ],
+          name: "CampaignDAOCreated",
+          type: "event",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          name: "allDAOs",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          name: "campaignDAOs",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_campaignToken",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "_campaignId",
+              type: "uint256",
+            },
+            {
+              internalType: "string",
+              name: "_hederaTopicId",
+              type: "string",
+            },
+            {
+              internalType: "address",
+              name: "_campaignCreator",
+              type: "address",
+            },
+            {
+              internalType: "bool",
+              name: "_isDAOEnabled",
+              type: "bool",
+            },
+          ],
+          name: "createCampaignDAO",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_campaignToken",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "_campaignId",
+              type: "uint256",
+            },
+            {
+              internalType: "string",
+              name: "_hederaTopicId",
+              type: "string",
+            },
+            {
+              internalType: "address",
+              name: "_campaignCreator",
+              type: "address",
+            },
+            {
+              internalType: "bool",
+              name: "_isDAOEnabled",
+              type: "bool",
+            },
+            {
+              internalType: "uint256",
+              name: "_proposalThreshold",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "_votingPeriod",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "_quorumPercentage",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "_majorityPercentage",
+              type: "uint256",
+            },
+          ],
+          name: "createCampaignDAOWithCustomParams",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "_campaignId",
+              type: "uint256",
+            },
+          ],
+          name: "daoExists",
+          outputs: [
+            {
+              internalType: "bool",
+              name: "",
+              type: "bool",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "defaultParameters",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "proposalThreshold",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "votingPeriod",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "quorumPercentage",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "majorityPercentage",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "getAllDAOs",
+          outputs: [
+            {
+              internalType: "address[]",
+              name: "",
+              type: "address[]",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "_campaignId",
+              type: "uint256",
+            },
+          ],
+          name: "getDAOByCampaign",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "_tokenAddress",
+              type: "address",
+            },
+          ],
+          name: "getDAOByToken",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [],
+          name: "getTotalDAOs",
+          outputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "",
+              type: "uint256",
+            },
+          ],
+          name: "hederaTopicIds",
+          outputs: [
+            {
+              internalType: "string",
+              name: "",
+              type: "string",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          name: "tokenToDAO",
+          outputs: [
+            {
+              internalType: "address",
+              name: "",
+              type: "address",
+            },
+          ],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "uint256",
+              name: "_proposalThreshold",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "_votingPeriod",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "_quorumPercentage",
+              type: "uint256",
+            },
+            {
+              internalType: "uint256",
+              name: "_majorityPercentage",
+              type: "uint256",
+            },
+          ],
+          name: "updateDefaultParameters",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+      ],
+    },
   },
 } as const;
 
