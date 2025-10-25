@@ -1,0 +1,129 @@
+type CampaignDAOFactory_CampaignDAOCreated {
+  id: ID!
+  campaignId: BigInt!
+  campaignToken: String!
+  daoAddress: String!
+  creator: String!
+}
+
+type Launchpad_CampaignCancelled {
+  id: ID!
+  campaignId: BigInt!
+  creator: String!
+}
+
+type Launchpad_CampaignCreated {
+  id: ID!
+  campaignId: BigInt!
+  creator: String!
+  name: String!
+  targetFunding: BigInt!
+  totalSupply: BigInt!
+  deadline: BigInt!
+}
+
+type Launchpad_CampaignPromoted {
+  id: ID!
+  campaignId: BigInt!
+}
+
+type Launchpad_FundingCompleted {
+  id: ID!
+  campaignId: BigInt!
+  totalFunding: BigInt!
+}
+
+type Launchpad_LiquidityAdded {
+  id: ID!
+  campaignId: BigInt!
+  usdcAmount: BigInt!
+  tokensAmount: BigInt!
+}
+
+type Launchpad_OgPointsAwarded {
+  id: ID!
+  campaignId: BigInt!
+  user: String!
+  amount: BigInt!
+}
+
+type Launchpad_PlatformFeeUpdated {
+  id: ID!
+  newFee: BigInt!
+}
+
+type Launchpad_RefundClaimed {
+  id: ID!
+  campaignId: BigInt!
+  investor: String!
+  amount: BigInt!
+}
+
+type Launchpad_TokensPurchased {
+  id: ID!
+  campaignId: BigInt!
+  buyer: String!
+  usdcAmount: BigInt!
+  tokensReceived: BigInt!
+  timestamp: BigInt!
+}
+
+type Launchpad_UserParticipatedInCampaign {
+  id: ID!
+  campaignId: BigInt!
+  user: String!
+  amount: BigInt!
+}
+
+type LaunchpadV2_CampaignCancelled {
+  id: ID!
+  campaignId: BigInt!
+  creator: String!
+}
+
+type LaunchpadV2_LiquidityEvent {
+  id: ID!
+  campaignId: BigInt!
+  tokenAmount: BigInt!
+  usdcAmount: BigInt!
+  user: String!
+  tradeType: BigInt!
+  token: String!
+}
+
+type LaunchpadV2_RefundClaimed {
+  id: ID!
+  campaignId: BigInt!
+  investor: String!
+  amount: BigInt!
+}
+
+type LaunchpadV2_SwapEvent {
+  id: ID!
+  campaignId: BigInt!
+  amount: BigInt!
+  user: String!
+  tradeType: BigInt!
+  token: String!
+}
+
+type Usdc_Approval {
+  id: ID!
+  owner: String!
+  spender: String!
+  value: BigInt!
+}
+
+type Usdc_OwnershipTransferred {
+  id: ID!
+  previousOwner: String!
+  newOwner: String!
+}
+
+type Usdc_Transfer {
+  id: ID!
+  from: String!
+  to: String!
+  value: BigInt!
+}
+
