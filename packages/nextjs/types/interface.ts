@@ -22,6 +22,8 @@ export interface ICampaign {
   isPromoted?: boolean;
   blockNumberCreated: number;
   reserveRatio: number;
+  tokenIconFileId?: string;
+  whitepaperFileId?: string;
 }
 
 export interface IStakingPool {
