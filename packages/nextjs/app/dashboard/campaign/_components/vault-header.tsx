@@ -9,6 +9,7 @@ import { Skeleton } from "~~/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "~~/components/ui/tooltip";
 import externalContracts from "~~/contracts/externalContracts";
 import { useCopyToClipboard, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useHederaTokenIcon } from "~~/hooks/useHederaTokenIcon";
 import { formatAmount } from "~~/lib/utils";
 import { ICampaign } from "~~/types/interface";
 
@@ -19,6 +20,9 @@ export function VaultHeader({ campaign, address }: { campaign: ICampaign | undef
   const { writeContractAsync: approveAsync } = useWriteContract();
 
   const { poolMetrics, totalSupply, iscalculating } = usePoolPrice(campaign?.uniswapPair);
+
+  const { iconUrl, isLoading: isLoadingIcon } = useHederaTokenIcon(campaign?.tokenIconFileId);
+  console.log("iconrurl", iconUrl);
 
   const erc20Abi = [
     {
@@ -154,7 +158,19 @@ export function VaultHeader({ campaign, address }: { campaign: ICampaign | undef
             variant="secondary"
             className="bg-green-900/30 text-green-400 border-green-700 py-1 text-xs sm:text-sm"
           >
-            <div className="w-2 h-2 bg-green-400 rounded-full mr-2" />
+            {isLoadingIcon ? (
+              <Skeleton className="w-5 h-5 rounded-full mr-2 bg-[#11181C]" />
+            ) : iconUrl ? (
+              <Image
+                src={iconUrl}
+                alt={campaign?.symbol || "Token"}
+                width={20}
+                height={20}
+                className="w-5 h-5 mr-2 rounded-full"
+              />
+            ) : (
+              <div className="w-2 h-2 bg-green-400 rounded-full mr-2" />
+            )}
             {campaign?.symbol}
           </Badge>
           <Badge variant="secondary" className="bg-blue-900/30 text-blue-400 border-blue-700 text-xs sm:text-sm">
