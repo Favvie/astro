@@ -1,9 +1,12 @@
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { View } from "lucide-react";
 import { Address } from "~~/components/scaffold-eth";
 import { Badge } from "~~/components/ui/badge";
 import { Button } from "~~/components/ui/button";
+import { Skeleton } from "~~/components/ui/skeleton";
+import { useHederaTokenIcon } from "~~/hooks/useHederaTokenIcon";
 import { formatAmount } from "~~/lib/utils";
 import { ICampaign } from "~~/types/interface";
 
@@ -12,6 +15,8 @@ interface TableRowProps {
 }
 
 const TableRow: React.FC<TableRowProps> = ({ campaign }) => {
+  const { iconUrl, isLoading: isLoadingIcon } = useHederaTokenIcon(campaign?.tokenIconFileId);
+  console.log("iconrurl", iconUrl);
   return (
     <>
       <Link
@@ -20,7 +25,20 @@ const TableRow: React.FC<TableRowProps> = ({ campaign }) => {
       >
         <div className="flex items-center space-x-3">
           <div className="h-8 w-8 bg-[#8daa98] rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-semibold">S</span>
+            {/* <span className="text-white text-xs font-semibold">S</span> */}
+            {isLoadingIcon ? (
+              <Skeleton className="w-5 h-5 rounded-full mr-2 bg-[#11181C]" />
+            ) : iconUrl ? (
+              <Image
+                src={iconUrl}
+                alt={campaign?.symbol || "Token"}
+                width={20}
+                height={20}
+                className="w-5 h-5 mr-2 rounded-full"
+              />
+            ) : (
+              <span className="text-white text-xs font-semibold">S</span>
+            )}
           </div>
           <span className="text-white">{campaign.name} USDC</span>
         </div>

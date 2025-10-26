@@ -1,6 +1,6 @@
 import React from "react";
 import { FeaturesCard } from "./features-card";
-import { spaceBumsFeatures } from "~~/lib/mock-data.ts/mock";
+import { astroFeatures } from "~~/lib/mock-data.ts/mock";
 
 export function BentoSection() {
   return (
@@ -27,7 +27,7 @@ export function BentoSection() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 z-10">
-          {spaceBumsFeatures.map(feature => (
+          {astroFeatures.map(feature => (
             <FeaturesCard feature={feature} key={feature.id} />
           ))}
         </div>

@@ -2,9 +2,9 @@
 
 import React from "react";
 import { GlowingStarsBackgroundCard, GlowingStarsDescription, GlowingStarsTitle } from "./ui/glowing-stars";
-import { ISpaceBumsFeature } from "~~/types/interface";
+import { IAstroFeature } from "~~/types/interface";
 
-export function FeaturesCard({ feature }: { feature: ISpaceBumsFeature }) {
+export function FeaturesCard({ feature }: { feature: IAstroFeature }) {
   return (
     <div className="flex items-center justify-center antialiased">
       <GlowingStarsBackgroundCard>

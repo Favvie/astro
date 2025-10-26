@@ -11,7 +11,7 @@ export function FooterSection() {
         {/* Left Section: Logo, Description, Social Links */}
         <div className="flex flex-col justify-start items-start gap-8 p-4 md:p-8">
           <div className="flex gap-3 items-stretch justify-center">
-            <Image src="/spacebums.png" alt="Logo" width={100} height={100} className="w-28" />
+            <Image src="/logo.svg" alt="Logo" width={100} height={100} className="w-28" />
           </div>
           <p className="text-foreground/90 text-sm font-medium leading-[18px] text-left">
             From zero gravity to full liquidity in one launch.
@@ -93,7 +93,7 @@ export function FooterSection() {
         </div>
       </footer>
       <div className="px-2 sm:px-0">
-        <TextHoverEffect text="SPACEBUMS" />
+        <TextHoverEffect text="ASTRO" />
       </div>
     </div>
   );
