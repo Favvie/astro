@@ -45,7 +45,7 @@ export interface ITokenPurchaseEvents {
   usdcAmount: number;
 }
 
-export interface ISpaceBumsFeature {
+export interface IAstroFeature {
   id: number;
   title: string;
   description: string;

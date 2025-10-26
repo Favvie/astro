@@ -1,6 +1,6 @@
-import { ISpaceBumsFeature } from "~~/types/interface";
+import { IAstroFeature } from "~~/types/interface";
 
-export const spaceBumsFeatures: ISpaceBumsFeature[] = [
+export const astroFeatures: IAstroFeature[] = [
   {
     id: 1,
     title: "Campaign Creation",

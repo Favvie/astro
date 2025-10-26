@@ -13,52 +13,18 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Skeleton } from "~~/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~~/components/ui/tabs";
 import { useCampaignsByCreatorWithDetails } from "~~/hooks/envioDataQueries/useCampaignsByCreatorWithDetails";
+import { useCampaignsByParticipantWithDetails } from "~~/hooks/envioDataQueries/useCampaignsByParticipantWithDetails";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 import { formatAmount } from "~~/lib/utils";
-import { ICampaign } from "~~/types/interface";
 
 export function DashboardContent() {
   const { address: connectedAddress } = useAccount();
 
-  const { data: rawusersParticipatedCampaigns } = useScaffoldReadContract({
-    contractName: "LaunchpadV2",
-    functionName: "getUserParticipatedCampaignsWithInvestmentCheck",
-    args: [connectedAddress],
-  });
-
   // Fetch campaigns from Envio (real-time) + Contract (full details)
   const { data: campaignsByCreator } = useCampaignsByCreatorWithDetails(connectedAddress);
 
-  const usersParticipatedCampaigns = useMemo((): ICampaign[] => {
-    if (!rawusersParticipatedCampaigns) return [];
-    return rawusersParticipatedCampaigns?.map(
-      (c: any): ICampaign => ({
-        id: Number(c.id),
-        creator: c.creator,
-        targetAmount: Number(c.targetAmount / 10n ** 6n),
-        amountRaised: Number(c.amountRaised / 10n ** 6n),
-        tokensSold: Number(c.tokensSold / 10n ** 18n),
-        totalSupply: Number(c.totalSupply / 10n ** 18n),
-        tokensForSale: Number(c.tokensForSale / 10n ** 18n),
-        creatorAllocation: Number(c.creatorAllocation / 10n ** 18n),
-        liquidityAllocation: Number(c.liquidityAllocation / 10n ** 18n),
-        platformFeeTokens: Number(c.platformFeeTokens / 10n ** 18n),
-        deadline: Number(c.deadline),
-        tokenAddress: c.tokenAddress, // mapping tokenAddress to token
-        isActive: c.isActive,
-        isFundingComplete: c.isFundingComplete,
-        isCancelled: c.isCancelled,
-        name: c.name,
-        symbol: c.symbol,
-        description: c.description,
-        reserveRatio: Number(c.reserveRatio),
-        blockNumberCreated: Number(c.blockNumberCreated),
-        // ogPoints: c.promotionalOgPoints ? Number(c.promotionalOgPoints) : undefined,
-        isPromoted: c.isPromoted,
-        uniswapPair: c.uniswapPair,
-      }),
-    );
-  }, [rawusersParticipatedCampaigns]);
+  // Fetch campaigns user participated in from Envio (real-time) + Contract (full details)
+  const { data: usersParticipatedCampaigns } = useCampaignsByParticipantWithDetails(connectedAddress);
 
   const { data: usertotalInvestment } = useScaffoldReadContract({
     contractName: "LaunchpadV2",

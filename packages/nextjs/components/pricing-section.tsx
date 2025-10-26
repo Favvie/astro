@@ -61,8 +61,8 @@ export function PricingSection() {
             Something For Everyone.
           </h2>
           <p className="max-w-xl sm:max-w-2xl text-center text-muted-foreground font-light leading-tight px-2 sm:px-0">
-            Whether you&apos;re a builder launching your vision or a backer hunting for early gems, SpaceBums delivers
-            the tools, safety, and incentives to make your journey profitable and secure.
+            Whether you&apos;re a builder launching your vision or a backer hunting for early gems, Astro delivers the
+            tools, safety, and incentives to make your journey profitable and secure.
           </p>
         </div>
       </div>
