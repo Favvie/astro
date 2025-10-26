@@ -31,7 +31,6 @@ export const useAllCampaignsWithDetails = (limit?: number) => {
 
     let ids = campaigns.map(c => Number(c.campaignId));
 
-    // Apply limit if specified
     if (limit) {
       ids = ids.slice(0, limit);
     }
