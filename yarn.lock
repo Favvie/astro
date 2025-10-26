@@ -11268,7 +11268,7 @@ __metadata:
 
 "generated@file:./generated::locator=envio%40workspace%3Apackages%2Fenvio":
   version: 0.1.0
-  resolution: "generated@file:./generated#./generated::hash=b8cdae&locator=envio%40workspace%3Apackages%2Fenvio"
+  resolution: "generated@file:./generated#./generated::hash=0e4793&locator=envio%40workspace%3Apackages%2Fenvio"
   dependencies:
     "@rescript/react": 0.12.1
     bignumber.js: 9.1.2
@@ -11291,7 +11291,7 @@ __metadata:
     ts-node: 10.9.1
     viem: 2.21.0
     yargs: 17.7.2
-  checksum: 11d0bb508a8fd852acb1c9ae8dd8cded47dc9d3cd6e1e09899f315a72c3ebc41752843fe7e1a740a883c8fea2e0180ca04cc48221d13f1be70ac045bdfa736d4
+  checksum: fa47403619ae94f7efa34822017952403a362e54c3357decbde2898a380b2da68aff6f457f1b1333340dcb53e848b543626493f8dff86b67457cd94b1062ee41
   languageName: node
   linkType: hard
 
