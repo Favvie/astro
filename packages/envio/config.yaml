@@ -25,7 +25,6 @@ networks:
                 - 0x5F9A7Db4c568421a65E4cb6D1ef1457546156531
             handler: src/EventHandlers.ts
             events:
-                - event: CampaignCancelled(uint256 indexed campaignId, address indexed creator)
                 - event: LiquidityEvent(uint256 indexed CampaignId, uint256 tokenAmount, uint256 usdcAmount, address user, uint8 tradeType, address token)
                 - event: RefundClaimed(uint256 indexed campaignId, address indexed investor, uint256 amount)
                 - event: SwapEvent(uint256 indexed CampaignId, uint256 amount, address user, uint8 tradeType, address token)
