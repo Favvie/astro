@@ -1,13 +1,14 @@
-// hooks/useCampaignsByCreatorWithDetails.ts
+// hooks/useCampaignsByCreatorMulticall.ts
 import { useMemo } from "react";
-import { useDeployedContractInfo, useSelectedNetwork } from "../scaffold-eth";
+import { useDeployedContractInfo } from "../scaffold-eth";
+import { useSelectedNetwork } from "../scaffold-eth";
 import { useCampaignsByCreator } from "./useCampaignsByCreator";
 import { useReadContracts } from "wagmi";
 import { ICampaign } from "~~/types/interface";
 import { AllowedChainIds } from "~~/utils/scaffold-eth";
 
 /**
- * Optimized hook that fetches campaigns detected by Envio and retrieves their full details from the contract.
+ * Optimized hook that fetches campaigns detected by Envio using wagmi multicall.
  *
  * Flow:
  * 1. Envio detects new campaigns via events (real-time updates)
@@ -15,20 +16,15 @@ import { AllowedChainIds } from "~~/utils/scaffold-eth";
  * 3. Use wagmi multicall to fetch _getCampaignInfo for all campaign IDs in parallel
  * 4. Transform and return combined campaign data
  */
-export const useCampaignsByCreatorWithDetails = (creatorAddress: string | undefined) => {
+export const useCampaignsByCreatorMulticall = (creatorAddress: string | undefined) => {
   // Fetch from Envio (triggers polling every 10 seconds to detect new campaigns)
   const { data: envioCampaignsData, isLoading: isLoadingEnvio } = useCampaignsByCreator(creatorAddress);
-
-  // Memoize campaign IDs to prevent unnecessary re-renders of dependent hooks
-  const envioCampaignIds = useMemo(() => {
-    const ids = envioCampaignsData?.Launchpad_CampaignCreated?.map(c => Number(c.campaignId)) || [];
-    console.log("envioCampaignIds", ids);
-    return ids;
-  }, [envioCampaignsData]);
+  const envioCampaignIds = envioCampaignsData?.Launchpad_CampaignCreated?.map(c => Number(c.campaignId)) || [];
+  console.log("envioCampaignIds", envioCampaignIds);
 
   const selectedNetwork = useSelectedNetwork();
   const { data: deployedContract } = useDeployedContractInfo({
-    contractName: "Launchpad",
+    contractName: "LaunchpadV2",
     chainId: selectedNetwork.id as AllowedChainIds,
   });
 
@@ -54,8 +50,6 @@ export const useCampaignsByCreatorWithDetails = (creatorAddress: string | undefi
     },
   });
 
-  console.log("campaignDetailsArray", campaignDetailsArray);
-
   // Transform contract data to UI-friendly format
   const campaignsByCreator = useMemo((): ICampaign[] => {
     if (!campaignDetailsArray || campaignDetailsArray.length === 0) {
@@ -69,7 +63,6 @@ export const useCampaignsByCreatorWithDetails = (creatorAddress: string | undefi
         }
 
         const campaign = result.result;
-        console.log("campaign", campaign);
         return {
           id: Number(campaign.id),
           creator: campaign.creator,
@@ -103,6 +96,6 @@ export const useCampaignsByCreatorWithDetails = (creatorAddress: string | undefi
     isLoading: isLoadingEnvio || isLoadingContract,
     isLoadingEnvio,
     isLoadingContract,
-    envioCampaignIds, // For debugging/tracking which campaigns came from Envio
+    envioCampaignIds,
   };
 };
