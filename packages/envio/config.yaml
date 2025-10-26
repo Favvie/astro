@@ -3,7 +3,7 @@ name: envio
 networks:
     - id: 296
       rpc: https://testnet.hashio.io/api
-      start_block: 26000000
+      start_block: 26400000
       contracts:
           - name: Launchpad
             address:
@@ -22,13 +22,13 @@ networks:
                 - event: UserParticipatedInCampaign(uint256 indexed campaignId, address indexed user, uint256 amount)
           - name: LaunchpadV2
             address:
-                - 0x5F9A7Db4c568421a65E4cb6D1ef1457546156531
+                - 0x928889FCfECEEE99eCd0D16176140D4714035D67
             handler: src/EventHandlers.ts
             events:
                 - event: CampaignCancelled(uint256 indexed campaignId, address indexed creator)
-                - event: LiquidityEvent(uint256 indexed CampaignId, uint256 tokenAmount, uint256 usdcAmount, address user, uint8 tradeType, address token)
+                - event: LiquidityEvent(uint256 indexed campaignId, uint256 tokenAmount, uint256 usdcAmount, address user, uint8 tradeType, address token)
                 - event: RefundClaimed(uint256 indexed campaignId, address indexed investor, uint256 amount)
-                - event: SwapEvent(uint256 indexed CampaignId, uint256 amount, address user, uint8 tradeType, address token)
+                - event: SwapEvent(uint256 indexed campaignId, uint256 amount, address user, uint8 tradeType, address token)
           - name: Usdc
             address:
                 - 0x82254d0f8C5091E79a5433f87ca7354a88FB1292

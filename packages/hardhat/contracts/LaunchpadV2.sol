@@ -118,15 +118,25 @@ contract LaunchpadV2 is ReentrancyGuard {
     error Unauthorized();
     error InvalidInput();
 
-    enum TradeType {buy, sell}
+    enum TradeType {
+        buy,
+        sell
+    }
 
     event CampaignCancelled(uint256 indexed campaignId, address indexed creator);
 
     event RefundClaimed(uint256 indexed campaignId, address indexed investor, uint256 amount);
 
-    event SwapEvent(uint256 indexed CampaignId, uint256 amount, address user, TradeType tradeType, address token);
+    event SwapEvent(uint256 indexed campaignId, uint256 amount, address user, TradeType tradeType, address token);
 
-    event LiquidityEvent(uint256 indexed CampaignId, uint256 tokenAmount, uint256 usdcAmount, address user, TradeType tradeType, address token);
+    event LiquidityEvent(
+        uint256 indexed campaignId,
+        uint256 tokenAmount,
+        uint256 usdcAmount,
+        address user,
+        TradeType tradeType,
+        address token
+    );
 
     constructor(address _parentContract, address _usdcToken, address _uniswapRouter, address _uniswapFactory) {
         parentContract = IParentContract(_parentContract);

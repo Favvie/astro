@@ -11,10 +11,6 @@ importers:
       envio:
         specifier: 2.31.0
         version: 2.31.0(typescript@5.2.2)
-    optionalDependencies:
-      generated:
-        specifier: ./generated
-        version: link:generated
     devDependencies:
       '@types/chai':
         specifier: ^4.3.11

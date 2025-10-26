@@ -1,52 +1,57 @@
+import { useState } from "react";
 import Image from "next/image";
 import { usePoolPrice } from "../utils/pool-price";
 import { BrushCleaning, ExternalLink } from "lucide-react";
 import { Address } from "~~/components/scaffold-eth";
 import { Card } from "~~/components/ui/card";
 import { Skeleton } from "~~/components/ui/skeleton";
-import { useScaffoldEventHistory } from "~~/hooks/scaffold-eth";
+import {
+  useDebugLiquidityV1Events,
+  useDebugLiquidityV2Events,
+} from "~~/hooks/envioDataQueries/useDebugLiquidityEvents";
+import { useDebugSwapEvents } from "~~/hooks/envioDataQueries/useDebugSwapEvents";
+import { useLiquidityEventsByCampaign } from "~~/hooks/envioDataQueries/useLiquidityEventsByCampaign";
+import { useSwapEventsByCampaign } from "~~/hooks/envioDataQueries/useSwapEventsByCampaign";
+import { useTokensPurchasedByCampaign } from "~~/hooks/envioDataQueries/useTokensPurchasedByCampaign";
 import { formatAmount } from "~~/lib/utils";
 import { ICampaign } from "~~/types/interface";
 
+type TabType = "transactions" | "swaps" | "liquidity";
+
 export function ActivityTab({ campaign }: { campaign: ICampaign | undefined }) {
-  const { data: events, isLoading: isLoadingEvents } = useScaffoldEventHistory({
-    contractName: "Launchpad",
-    eventName: "TokensPurchased",
-    fromBlock: BigInt(campaign?.blockNumberCreated || 0),
-    watch: true,
-    filters: { campaignId: BigInt(campaign?.id || 0) },
-    blockData: true,
-    transactionData: true,
-    receiptData: true,
-    enabled: !!campaign?.id && !!campaign?.blockNumberCreated && !!campaign?.isActive,
-  });
-  const { swapEvents } = usePoolPrice(campaign?.uniswapPair || "");
+  const [activeTab, setActiveTab] = useState<TabType>(campaign?.isFundingComplete ? "transactions" : "transactions");
 
-  console.log("buy events", events);
-  console.log("swaps", swapEvents);
+  // Fetch TokensPurchased events from Envio indexer
+  const { data: envioData, isLoading: isLoadingEvents } = useTokensPurchasedByCampaign(campaign?.id);
+  const events = envioData?.Launchpad_TokensPurchased || [];
 
-  const formatTimeAgo = (timestamp: number) => {
-    const now = Date.now() / 1000;
-    const diff = now - timestamp;
+  // Fetch Swap events for live campaigns
+  const { data: swapData, isLoading: isLoadingSwaps } = useSwapEventsByCampaign(
+    campaign?.isFundingComplete ? campaign?.id : undefined,
+  );
+  const swapEvents = swapData?.LaunchpadV2_SwapEvent || [];
 
-    if (diff < 60) return `${Math.floor(diff)}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
-  };
+  // Fetch Liquidity events for live campaigns
+  const { data: liquidityData, isLoading: isLoadingLiquidity } = useLiquidityEventsByCampaign(
+    campaign?.isFundingComplete ? campaign?.id : undefined,
+  );
+  const liquidityEvents = liquidityData?.LaunchpadV2_LiquidityEvent || [];
 
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
+  // Debug hooks to check if data exists globally
+  const { data: debugSwapData } = useDebugSwapEvents();
+  const { data: debugLiquidityV1Data } = useDebugLiquidityV1Events();
+  const { data: debugLiquidityV2Data } = useDebugLiquidityV2Events();
 
-  const formatNumber = (num: number, decimals: number = 2) => {
-    if (num === 0) return "0";
-    if (num < 0.01) return num.toExponential(2);
-    return num.toLocaleString(undefined, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    });
-  };
+  const { swapEvents: poolSwapEvents } = usePoolPrice(campaign?.uniswapPair || "");
+
+  console.log("Campaign ID:", campaign?.id);
+  console.log("buy events (from Envio)", events);
+  console.log("swap events (filtered by campaignId)", swapEvents);
+  console.log("liquidity events (filtered by campaignId)", liquidityEvents);
+  console.log("DEBUG - All swap events in system:", debugSwapData?.LaunchpadV2_SwapEvent);
+  console.log("DEBUG - All liquidity V1 events in system:", debugLiquidityV1Data?.Launchpad_LiquidityAdded);
+  console.log("DEBUG - All liquidity V2 events in system:", debugLiquidityV2Data?.LaunchpadV2_LiquidityEvent);
+  console.log("pool swaps", poolSwapEvents);
 
   return (
     <div className="space-y-8">
@@ -54,80 +59,142 @@ export function ActivityTab({ campaign }: { campaign: ICampaign | undefined }) {
         {campaign?.isFundingComplete ? (
           <>
             <div className="mb-6">
-              <h3 className="text-lg text-gray-300">Recent Trading Activity</h3>
+              <h3 className="text-lg text-gray-300">Live Trading Activity</h3>
             </div>
-            <div className="bg-[#11181C] border-[#24353d] border rounded-lg overflow-hidden">
-              {/* Table Header */}
-              <div className="grid grid-cols-5 gap-4 p-4 border-b border-gray-700 text-gray-400 text-xs">
-                <div>Type</div>
-                <div className="flex items-center gap-1">
-                  Time
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-                <div>Amount</div>
-                <div>To</div>
-                <div>Transaction</div>
-              </div>
 
-              {/* Transaction Row */}
-              {swapEvents.length > 0 ? (
-                swapEvents.slice(0, 50).map((event, index) => (
-                  <div
-                    key={`${event.transactionHash}-${index}`}
-                    className="grid grid-cols-5 gap-2 p-4 text-xs overflow-x-scroll"
-                  >
-                    <div className="py-3">
-                      <span
-                        className={`px-2 py-1 rounded-2xl text-xs font-medium ${
-                          event.type === "buy" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {event.type.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="text-gray-300 pt-2">{formatTimeAgo(event.timestamp)}</div>
-                    <span className="text-white pt-2">
-                      ${formatNumber(Math.max(event.amountInUSD, event.amountOutUSD))}
-                    </span>
-                    <a
-                      href={`https://sepolia.etherscan.io/address/${event.sender}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+            {/* Tab Navigation */}
+            <div className="mb-6 flex gap-4 border-b border-gray-700">
+              <button
+                onClick={() => setActiveTab("swaps")}
+                className={`px-4 py-3 font-medium transition-colors ${
+                  activeTab === "swaps" ? "text-white border-b-2 border-green-500" : "text-gray-400 hover:text-gray-300"
+                }`}
+              >
+                Swaps
+              </button>
+              <button
+                onClick={() => setActiveTab("liquidity")}
+                className={`px-4 py-3 font-medium transition-colors ${
+                  activeTab === "liquidity"
+                    ? "text-white border-b-2 border-green-500"
+                    : "text-gray-400 hover:text-gray-300"
+                }`}
+              >
+                Liquidity
+              </button>
+            </div>
+
+            {/* Swaps Tab */}
+            {activeTab === "swaps" && (
+              <div className="bg-[#11181C] border-[#24353d] border rounded-lg overflow-hidden">
+                {/* Table Header */}
+                <div className="grid grid-cols-4 gap-4 p-4 border-b border-gray-700 text-gray-400 text-xs">
+                  <div>User</div>
+                  <div>Amount</div>
+                  <div>Type</div>
+                  <div>Token</div>
+                </div>
+
+                {/* Swap Events Row */}
+                {isLoadingSwaps ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <Skeleton key={index} className="w-full h-12 rounded-2xl bg-slate-600/40" />
+                  ))
+                ) : swapEvents.length > 0 ? (
+                  swapEvents.map(event => (
+                    <div key={event.id} className="grid grid-cols-4 gap-2 p-4 text-xs overflow-x-scroll">
                       <div className="flex items-center gap-2 hover:bg-[#546054b0] w-3/4 py-1 px-2 rounded-2xl">
-                        <Address size="xs" address={event.sender as `0x${string}`} />
+                        <Address size="xs" address={event.user as `0x${string}`} />
                         <ExternalLink className="w-4 h-4 mb-1" />
                       </div>
-                    </a>
-
-                    <a
-                      href={`https://sepolia.etherscan.io/tx/${event.transactionHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-gray-400 pt-2"
-                    >
-                      {formatAddress(event.transactionHash)}
-                    </a>
-                  </div>
-                ))
-              ) : (
-                <Card className="bg-[#19242a] border-[#3e545f] h-64">
-                  <div className="flex items-center justify-center w-full h-full">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="h-16 w-16 rounded-full flex justify-center items-center bg-[#546054b0] text-[#8daa98]">
-                        <BrushCleaning size={27} />
+                      <span className="text-white pt-2">{formatAmount(Number(event.amount) / 1e6)} USDC</span>
+                      <div className="pt-2">
+                        <span
+                          className={`px-2 py-1 rounded-2xl text-xs font-medium ${
+                            event.tradeType === 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {event.tradeType === 0 ? "BUY" : "SELL"}
+                        </span>
                       </div>
-
-                      <div className="flex flex-col items-start gap-2">
-                        <div className="font-medium text-lg text-[#8daa98]">No activities found</div>
+                      <span className="text-gray-400 pt-2 font-mono text-xs">
+                        {event.token.slice(0, 6)}...{event.token.slice(-4)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <Card className="bg-[#19242a] border-[#3e545f] h-64">
+                    <div className="flex items-center justify-center w-full h-full">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="h-16 w-16 rounded-full flex justify-center items-center bg-[#546054b0] text-[#8daa98]">
+                          <BrushCleaning size={27} />
+                        </div>
+                        <div className="flex flex-col items-start gap-2">
+                          <div className="font-medium text-lg text-[#8daa98]">No swaps found</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              )}
-            </div>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* Liquidity Tab */}
+            {activeTab === "liquidity" && (
+              <div className="bg-[#11181C] border-[#24353d] border rounded-lg overflow-hidden">
+                {/* Table Header */}
+                <div className="grid grid-cols-5 gap-4 p-4 border-b border-gray-700 text-gray-400 text-xs">
+                  <div>User</div>
+                  <div>USDC Amount</div>
+                  <div>Token Amount</div>
+                  <div>Type</div>
+                  <div>Token</div>
+                </div>
+
+                {/* Liquidity Events Row */}
+                {isLoadingLiquidity ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <Skeleton key={index} className="w-full h-12 rounded-2xl bg-slate-600/40" />
+                  ))
+                ) : liquidityEvents.length > 0 ? (
+                  liquidityEvents.map(event => (
+                    <div key={event.id} className="grid grid-cols-5 gap-2 p-4 text-xs overflow-x-scroll">
+                      <div className="flex items-center gap-2 hover:bg-[#546054b0] w-3/4 py-1 px-2 rounded-2xl">
+                        <Address size="xs" address={event.user as `0x${string}`} />
+                        <ExternalLink className="w-4 h-4 mb-1" />
+                      </div>
+                      <span className="text-white pt-2">{formatAmount(Number(event.usdcAmount) / 1e6)} USDC</span>
+                      <span className="text-white pt-2">{formatAmount(Number(event.tokenAmount) / 1e18)}</span>
+                      <div className="pt-2">
+                        <span
+                          className={`px-2 py-1 rounded-2xl text-xs font-medium ${
+                            event.tradeType === 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {event.tradeType === 0 ? "ADD" : "REMOVE"}
+                        </span>
+                      </div>
+                      <span className="text-gray-400 pt-2 font-mono text-xs">
+                        {event.token.slice(0, 6)}...{event.token.slice(-4)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <Card className="bg-[#19242a] border-[#3e545f] h-64">
+                    <div className="flex items-center justify-center w-full h-full">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="h-16 w-16 rounded-full flex justify-center items-center bg-[#546054b0] text-[#8daa98]">
+                          <BrushCleaning size={27} />
+                        </div>
+                        <div className="flex flex-col items-start gap-2">
+                          <div className="font-medium text-lg text-[#8daa98]">No liquidity events found</div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -153,23 +220,23 @@ export function ActivityTab({ campaign }: { campaign: ICampaign | undefined }) {
                   <Skeleton key={index} className="w-full h-48 rounded-2xl bg-slate-600/40" />
                 ))
               ) : events.length > 0 ? (
-                events.reverse().map((event, index) => {
+                events.map(event => {
                   return (
-                    <div key={index} className="grid grid-cols-4 gap-2 p-4 text-xs overflow-x-scroll">
+                    <div key={event.id} className="grid grid-cols-4 gap-2 p-4 text-xs overflow-x-scroll">
                       <div className="text-gray-300 pt-2">
-                        {new Date(Number(event.args.timestamp) * 1000).toLocaleDateString()}
+                        {new Date(Number(event.timestamp) * 1000).toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-2 hover:bg-[#546054b0] w-3/4 py-1 px-2 rounded-2xl">
-                        <Address size="xs" address={event.args.buyer} />
+                        <Address size="xs" address={event.buyer as `0x${string}`} />
                         <ExternalLink className="w-4 h-4 mb-1" />
                       </div>
                       <div className="flex items-center gap-2">
                         <Image src="/usdc.svg" alt="USDC" width={16} height={16} className="w-4 h-4" />
-                        <span className="text-white">{formatAmount(Number(event.args.usdcAmount) / 1e6)} USDC</span>
+                        <span className="text-white">{formatAmount(Number(event.usdcAmount) / 1e6)} USDC</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
-                        <span className="text-white">{formatAmount(Number(event.args.tokensReceived) / 1e18)}</span>
+                        <span className="text-white">{formatAmount(Number(event.tokensReceived) / 1e18)}</span>
                       </div>
                     </div>
                   );
