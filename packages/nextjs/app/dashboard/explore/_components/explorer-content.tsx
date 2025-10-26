@@ -5,7 +5,6 @@ import Image from "next/image";
 import CreateCampaignDrawer from "../../_components/create-campaign-drawer";
 import TableRow from "../../_components/table-row";
 import { ArrowDown, BrushCleaning, Search } from "lucide-react";
-import { useReadContract } from "wagmi";
 import GlobalStats from "~~/components/GlobalStats";
 import { AdvertisedCampaigns } from "~~/components/sliding-campaigns";
 import { Button } from "~~/components/ui/button";
@@ -13,7 +12,7 @@ import { Card } from "~~/components/ui/card";
 import { Input } from "~~/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "~~/components/ui/select";
 import { Skeleton } from "~~/components/ui/skeleton";
-import externalContracts from "~~/contracts/externalContracts";
+import { useAllCampaignsWithDetails } from "~~/hooks/envioDataQueries/useAllCampaignsWithDetails";
 
 type SortOption = "live" | "active" | "all" | "cancelled";
 
@@ -21,50 +20,17 @@ export function ExplorerContent() {
   const [sortBy, setSortBy] = useState<SortOption>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const offset = 0;
-  const limit = 10;
+  // Fetch all campaigns from Envio (real-time) + Contract (full details)
+  const { data: allCampaigns, isLoading } = useAllCampaignsWithDetails();
 
-  const { data: allCampaigns } = useReadContract({
-    address: externalContracts[296].LaunchpadV2.address,
-    abi: externalContracts[296].LaunchpadV2.abi,
-    functionName: "getAllCampaignsPaginated",
-    args: [offset, limit],
-  });
-
-  console.log("campaign", allCampaigns);
+  console.log("allCampaigns:", allCampaigns);
+  console.log("isLoading:", isLoading);
 
   const campaigns = useMemo(() => {
-    if (!allCampaigns?.[0]) return [];
-    // The type of 'c' is inferred from the contract's return type, which uses bigint for numerical values.
-    // We convert these bigints to numbers to match the ICampaign interface.
-    const convertedCampaigns = allCampaigns[0].map(c => ({
-      id: Number(c.id),
-      creator: c.creator,
-      targetAmount: Number(c.targetAmount / 10n ** 6n),
-      amountRaised: Number(c.amountRaised / 10n ** 6n),
-      tokensSold: Number(c.tokensSold / 10n ** 18n),
-      totalSupply: Number(c.totalSupply / 10n ** 18n),
-      tokensForSale: Number(c.tokensForSale / 10n ** 18n),
-      creatorAllocation: Number(c.creatorAllocation / 10n ** 18n),
-      liquidityAllocation: Number(c.liquidityAllocation / 10n ** 18n),
-      platformFeeTokens: Number(c.platformFeeTokens / 10n ** 18n),
-      deadline: Number(c.deadline),
-      tokenAddress: c.tokenAddress, // mapping tokenAddress to token
-      isActive: c.isActive,
-      isFundingComplete: c.isFundingComplete,
-      isCancelled: c.isCancelled,
-      name: c.name,
-      symbol: c.symbol,
-      description: c.description,
-      reserveRatio: Number(c.reserveRatio),
-      blockNumberCreated: Number(c.blockNumberCreated),
-      ogPoints: c.promotionalOgPoints ? Number(c.promotionalOgPoints) : undefined,
-      isPromoted: c.isPromoted,
-      uniswapPair: c.uniswapPair,
-    }));
+    if (!allCampaigns || allCampaigns.length === 0) return [];
 
     // Filter by status first
-    let filteredCampaigns = convertedCampaigns.filter(campaign => {
+    let filteredCampaigns = allCampaigns.filter(campaign => {
       switch (sortBy) {
         case "active":
           return campaign.isActive;
@@ -90,7 +56,6 @@ export function ExplorerContent() {
       switch (sortBy) {
         case "live":
         case "active":
-        // case "completed":
         case "cancelled":
           return b.blockNumberCreated - a.blockNumberCreated;
 
@@ -210,6 +175,8 @@ export function ExplorerContent() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Filter vaults"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10 bg-transparent border-[#25333b] rounded-lg h-10 text-white placeholder-gray-400 focus:border-gray-500"
               />
             </div>
@@ -217,7 +184,7 @@ export function ExplorerContent() {
         </div>
 
         {/* Table */}
-        {campaigns.length > 0 ? (
+        {isLoading ? (
           <div className="rounded-lg">
             {/* Table header */}
             <div className="grid grid-cols-5 gap-4 p-4 border-b border-gray-700 text-gray-400/70 text-xs bg-[#19242a] mb-4 rounded-t-2xl">
@@ -232,11 +199,27 @@ export function ExplorerContent() {
             </div>
 
             <div className="space-y-3 overflow-x-scroll max-h-96 overflow-y-scroll">
-              {!campaigns
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton className="h-20 bg-[#070907]/50 w-full rounded-2xl" key={i} />
-                  ))
-                : campaigns?.map(campaign => <TableRow key={campaign.id} campaign={campaign} />)}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton className="h-20 bg-[#070907]/50 w-full rounded-2xl" key={i} />
+              ))}
+            </div>
+          </div>
+        ) : campaigns.length > 0 ? (
+          <div className="rounded-lg">
+            {/* Table header */}
+            <div className="grid grid-cols-5 gap-4 p-4 border-b border-gray-700 text-gray-400/70 text-xs bg-[#19242a] mb-4 rounded-t-2xl">
+              <div>Campaign</div>
+              <div>Amount</div>
+              <div className="flex items-center space-x-1">
+                <span>Creator</span>
+                <ArrowDown className="h-3 w-3" />
+              </div>
+              <div>Status</div>
+              <div>Indulge</div>
+            </div>
+
+            <div className="space-y-3 overflow-x-scroll max-h-96 overflow-y-scroll">
+              {campaigns?.map(campaign => <TableRow key={campaign.id} campaign={campaign} />)}
             </div>
           </div>
         ) : searchQuery ? (
