@@ -1,7 +1,7 @@
 import { UseQueryOptions, UseQueryResult, useQuery } from "@tanstack/react-query";
 import { request } from "graphql-request";
 
-const ENVIO_ENDPOINT = process.env.NEXT_PUBLIC_ENVIO_ENDPOINT || "http://localhost:8080/v1/graphql";
+const ENVIO_ENDPOINT = "https://indexer.dev.hyperindex.xyz/f7cd6b3/v1/graphql" as const;
 
 export const useEnvioQuery = <TData = unknown, TError = unknown>(
   query: string,

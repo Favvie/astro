@@ -130,7 +130,7 @@ export function ExplorerContent() {
         </div>
 
         <Image
-          src={"/space/space-4-nobg.png"}
+          src={"/space-4-nobg.png"}
           alt="Space"
           width={800}
           height={800}
